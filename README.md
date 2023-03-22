@@ -16,10 +16,17 @@ In this scenario, accessing a social network account requires the use of a stati
 In order to address the mentioned issue, it is essential to implement two-factor authentication. This can be achieved by utilizing a blend of two techniques, Advanced Encryption Standard (AES) and Linear Congruential Generator (LCG), for the generation of one-time passwords (OTPs) to enhance security. AES is used to encrypt a counter value that is incremented for each new OTP, while LCG is used to generate the seed for the AES counter. The figure below show how this proposed method work.
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/91709484/226935912-200f63c8-361f-4b52-993a-e030818cd8ff.png" alt="Flowchart of Proposed Method"/>
+  <img src="https://user-images.githubusercontent.com/91709484/226950629-447f4951-4ad7-4201-ba9b-305d284bc74c.png" alt="Flowchart of Proposed Method"/>
 </p>
 <p align="center" dir="auto">
 Figure 1. Flowchart of Proposed Method
+</p>
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/91709484/226949108-ca00038b-3084-4ea6-a071-932d4e7e798a.jpg" alt=""/>
+</p>
+<p align="center" dir="auto">
+Figure 2. Log in using OTP
 </p>
 
 # Duty chart
