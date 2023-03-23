@@ -29,11 +29,12 @@ Figure 1. Flowchart of Proposed Method
 Figure 2. Log in using OTP
 </p>
 
-# Duty chart
-| ID | Name | Duty |
-| :---: | :--- |:--- |
-| 21521250 | Phan Thị Hồng Nhung | |
-| 21520679 | Đoàn Hải Đăng | |
-| 21520518 | Lê Thanh Tuấn | |
+# Task chart
+| Task | Phan Thị Hồng Nhung (21521250) | Đoàn Hải Đăng (21520679) | Lê Thanh Tuấn (21520518) |
+| :--- | :---: | :---: | :---: |
+| Introduce the problems and describe the process of performing the main tasks |  |  |  |
+| Design |  |  |  |
+| Database |  |  |  |
+| Implement and Test |  |  |  |
 
 # Tools 
