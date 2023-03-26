@@ -71,7 +71,7 @@ Figure 3. Application Simulation
 | OTP Transmission | The system sends the OTP to the user's registered email and phone number. |
 | User Input | The user enters the received OTP in the login screen and clicks the login button. |
 | OTP Verification | The system decrypts the received OTP using the user's secret key and verifies that it matches the generated OTP. If the OTPs match, the user is authenticated and allowed to access the system. |
-| OTP Verification | The system decrypts the received OTP using the user's secret key and verifies that it matches the generated OTP. If the OTPs match, the user is authenticated and allowed to access the system. |
+| OTP Expiration| The system sets a time limit on the validity of the OTP. If the user does not enter the OTP within the specified time, the OTP becomes invalid, and the user needs to request a new OTP to log in. |
 
 
 ## Tools and resources
