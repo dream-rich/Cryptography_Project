@@ -62,10 +62,10 @@ Figure 2. Log in using OTP
 ## Tools and resources
 | **Tools and resources** | **Description** |
 | :--- | :--- |
-|  | Library |
-|  | Programming Language |
-|  | Database |
-|  |  |
+| PyCrypto | Library |
+| Python | Programming Language |
+|MySQL  | Database |
+| Flask | Python Framework |
 
 ## Task chart
 | Task | Phan Thị Hồng Nhung (21521250) | Đoàn Hải Đăng (21520679) | Lê Thanh Tuấn (21520518) |
