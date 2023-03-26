@@ -52,6 +52,18 @@ Figure 2. Log in using OTP
 </p>
 
 ## Deploy plan
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/90460805/227756600-ee73fda6-398c-4110-bf71-e0740cbda8ea.png" alt="User Registration" width="300"/>
+  
+  <img src="https://user-images.githubusercontent.com/90460805/227756354-8f9904e5-a458-4213-adc5-e25aaeab3491.png" alt="User Registration" width="300"/>
+  
+  <img src="https://user-images.githubusercontent.com/90460805/227756247-19834a63-dfcf-4dd5-99ca-e33f8ee1d5fb.png" alt="OTP Verification" width="300"/>
+</p>
+<p align="center" dir="auto">
+Figure 3. Application Simulation 
+
+
 | **Target** | **Plan** |
 | :--- | :--- |
 | User Registration | The user registers with the system by providing their email address and phone number. |
