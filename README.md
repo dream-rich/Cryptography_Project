@@ -51,6 +51,17 @@ Figure 1. Flowchart of Proposed Method
 Figure 2. Log in using OTP
 </p>
 
+## Deploy plan
+| **Target** | **Plan** |
+| :--- | :--- |
+| User Registration | The user registers with the system by providing their email address and phone number. |
+| OTP Generation | When the user attempts to log in, the system generates a new OTP using the AES and LCG algorithm. |
+| OTP Transmission | The system sends the OTP to the user's registered email and phone number. |
+| User Input | The user enters the received OTP in the login screen and clicks the login button. |
+| OTP Verification | The system decrypts the received OTP using the user's secret key and verifies that it matches the generated OTP. If the OTPs match, the user is authenticated and allowed to access the system. |
+| OTP Verification | The system decrypts the received OTP using the user's secret key and verifies that it matches the generated OTP. If the OTPs match, the user is authenticated and allowed to access the system. |
+
+
 ## Tools and resources
 | **Tools and resources** | **Description** |
 | :--- | :--- |
