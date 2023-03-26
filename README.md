@@ -51,14 +51,6 @@ Figure 1. Flowchart of Proposed Method
 Figure 2. Log in using OTP
 </p>
 
-## Deploy plan
-| **Target** | **Plan** |
-| :--- | :--- |
-|  |  |
-|  |  |
-|  |  |
-|  |  |
-
 ## Tools and resources
 | **Tools and resources** | **Description** |
 | :--- | :--- |
@@ -74,4 +66,4 @@ Figure 2. Log in using OTP
 | Design | x | x |  |
 | Database |  | x | x |
 | Implement and Test | x |  | x |
-| Presentation |  |  |  |
+| Presentation | x |  |  |
