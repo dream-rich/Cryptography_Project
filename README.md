@@ -85,8 +85,9 @@ Figure 3. Application Simulation
 ## Task chart
 | Task | Phan Thị Hồng Nhung (21521250) | Đoàn Hải Đăng (21520679) | Lê Thanh Tuấn (21520518) |
 | :--- | :---: | :---: | :---: |
-| Identifying the problem and proposing solution | x | x | x |
+| Topic research | x | x | x |
 | Design | x | x |  |
 | Database |  | x | x |
 | Implement and Test | x |  | x |
 | Presentation | x |  |  |
+| Write the project report | | x | x |
