@@ -4,8 +4,7 @@ from . import db
 import json
 
 views = Blueprint('views', __name__)
+
 @views.route('/', methods=['GET', 'POST'])
-
 def home():
-    return "home.html"
-
+    return render_template('sign_up.html', user=current_user)
