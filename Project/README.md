@@ -2,9 +2,13 @@ OTP Based on AES and LCG
 
 ## Setup & Installation
 
-```pip install flask```
+```bash
+pip install flask
+```
 
-```pip install flask-mysql```
+```bash
+pip install flask-mysql
+```
 
 ##Make sure you have the latest version of Python installed.
 
