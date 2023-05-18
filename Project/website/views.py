@@ -9,3 +9,7 @@ views = Blueprint('views', __name__)
 def auth():
     return render_template('authentication.html')
 
+
+@views.route('/home')
+def home():
+    return render_template('home.html')

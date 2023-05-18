@@ -40,6 +40,32 @@
       </div>
     </nav>
 
+<!-- ... -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      {% if category == 'success' %}
+        <div class="alert alert-success alert-dismissable fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <a href="{{ url_for('views.home') }}" class="alert-link">Go to Home</a>
+        </div>
+      {% elif category == 'error' %}
+        <div class="alert alert-danger alert-dismissable fade show" role="alert">
+          {{ message }}
+          <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+<!-- ... -->
+
+
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %} {% for category, message in messages %} {% if category ==
     'error' %}
@@ -74,18 +100,20 @@
       integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
       crossorigin="anonymous"
     ></script>
-
-{% block javascript %}
-    <script type="text/javascript">
-      function deleteNote(noteId) {
-  fetch("/delete-note", {
-    method: "POST",
-    body: JSON.stringify({ noteId: noteId }),
-  }).then((_res) => {
-    window.location.href = "/";
-  });
-  }
-</script>
-{% endblock %}
+    {% block javascript %}
+    <script>
+      $(document).ready(function() {
+        $('#signup-form').submit(function(event) {
+          event.preventDefault(); // Prevent the form from submitting
+    
+          // Simulate a successful registration
+          // Replace this with your actual registration logic
+          setTimeout(function() {
+            $('#success-modal').modal('show'); // Display the success modal
+          }, 2000); // Delay the modal display for 2 seconds (replace with your desired delay)
+        });
+      });
+    </script>
+      {% endblock %}
   </body>
 </html>

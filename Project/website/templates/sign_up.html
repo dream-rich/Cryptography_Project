@@ -1,48 +1,68 @@
 {% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
-content %}
-<form method="POST">
-  <h3 align="center">Sign Up</h3>
-  <div class="form-group">
-    <label for="email">Email Address</label>
-    <input
-      type="email"
-      class="form-control"
-      id="email"
-      name="email"
-      placeholder="Enter email"
-    />
+  content %}
+  <form method="POST">
+    <h3 align="center">Sign Up</h3>
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <input
+        type="email"
+        class="form-control"
+        id="email"
+        name="email"
+        placeholder="Enter email"
+      />
+    </div>
+    <div class="form-group">
+      <label for="firstName">First Name</label>
+      <input
+        type="text"
+        class="form-control"
+        id="firstName"
+        name="firstName"
+        placeholder="Enter first name"
+      />
+    </div>
+    <div class="form-group">
+      <label for="password1">Password</label>
+      <input
+        type="password"
+        class="form-control"
+        id="password1"
+        name="password1"
+        placeholder="Enter password"
+      />
+    </div>
+    <div class="form-group">
+      <label for="password2">Password (Confirm)</label>
+      <input
+        type="password"
+        class="form-control"
+        id="password2"
+        name="password2"
+        placeholder="Confirm password"
+      />
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+  <div id="success-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="success-modal-label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="success-modal-label">Registration Successful!</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          Thank you for signing up! Click the button below to visit our Facebook page:
+          <a href="https://www.facebook.com/example-page" target="_blank" class="btn btn-primary">Visit Facebook</a>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="form-group">
-    <label for="firstName">First Name</label>
-    <input
-      type="text"
-      class="form-control"
-      id="firstName"
-      name="firstName"
-      placeholder="Enter first name"
-    />
-  </div>
-  <div class="form-group">
-    <label for="password1">Password</label>
-    <input
-      type="password"
-      class="form-control"
-      id="password1"
-      name="password1"
-      placeholder="Enter password"
-    />
-  </div>
-  <div class="form-group">
-    <label for="password2">Password (Confirm)</label>
-    <input
-      type="password"
-      class="form-control"
-      id="password2"
-      name="password2"
-      placeholder="Confirm password"
-    />
-  </div>
-  <br />
-  <button type="submit" class="btn btn-primary">Submit</button>
-</form>
 {% endblock %}
+
