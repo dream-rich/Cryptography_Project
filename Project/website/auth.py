@@ -65,12 +65,23 @@ def sign_up():
         elif len(password1) < 7:
             flash('Password must be at least 7 characters.', category='error')
         else:
-            new_user = User(email=email, first_name=first_name, password=generate_password_hash(
-                password1, method='sha256'))
+            # new_user = User(email=email, first_name=first_name, password=generate_password_hash(
+            #     password1, method='sha256'))
+            # db.session.add(new_user)
+            # db.session.commit()
+            # login_user(new_user, remember=True)           
+            # facebook_link = "https://www.facebook.com"
+            # flash(f'Account created! <a href="{facebook_link}">Link Facebook</a>', category='success')
+            # return redirect(url_for('views.home'))
+
+            new_user = User(email=email, first_name=first_name, password=generate_password_hash(password1, method='sha256'))
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
+
             flash('Account created!', category='success')
+            flash('Visit our Facebook page for more information.', category='facebook')
             return redirect(url_for('views.home'))
 
     return render_template("sign_up.html", user=current_user)
+

@@ -9,18 +9,11 @@ def sign_up():
     user = {"username": "Hong Nhung"}
     return render_template("sign_up.html", user = user)
 
-# @app.route("/home")
-# def home():
-#     return render_template("home.html")
-
 @app.route("/home")
 def home():
-    user = {"username": "Hong Nhung"}
-    return render_template("home.html", user=user)
-
+    return render_template("home.html")
 
 if __name__ == '__main__':
     app.run(debug=True)
-
 
 

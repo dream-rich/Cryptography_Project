@@ -42,6 +42,17 @@ content %}
       placeholder="Confirm password"
     />
   </div>
+  <div id="success-message" style="display: none;">
+    <p>Đăng ký thành công! Nhấn OK để vào trang home.</p>
+    <a href="https://www.facebook.com">Link Facebook</a>
+    <button onclick="redirectToHome()">OK</button>
+</div>
+
+<script>
+    function redirectToHome() {
+        window.location.href = "/home";
+    }
+</script>
   <br />
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>

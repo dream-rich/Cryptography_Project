@@ -1,6 +1,11 @@
-{% extends "base.html" %} {% block title %}Home{% endblock %} {% block content
-%}
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
 
-  {% endfor %}
-
+{% block content %}
+    <h1>Đây là trang home</h1>
+    {% if user is defined and user.is_authenticated %}
+        <!-- Hiển thị nội dung cho người dùng đã xác thực -->
+    {% else %}
+        <!-- Hiển thị nội dung cho người dùng chưa xác thực -->
+    {% endif %}
 {% endblock %}
