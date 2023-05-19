@@ -9,6 +9,8 @@ def sign_up():
     user = {'is_authenticated': True}
     return render_template("sign_up.html", user = user)
 
+@app.route
+
 if __name__ == '__main__':
     app.run(debug=True)
 

@@ -3,7 +3,7 @@
 {% block title %}Sign Up{% endblock %}
 
 {% block content %}
-<form method="POST" action="/sign-up">
+<form method="POST" action="/sign-up" onsubmit="showSuccessModal(event)">
   <h3 align="center">Sign Up</h3>
   <div class="form-group">
     <label for="email">Email Address</label>
@@ -49,6 +49,7 @@
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 
+<!-- Modal hiển thị thông báo -->
 <div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -61,12 +62,23 @@
       <div class="modal-body">
         Congratulations! You have successfully signed up.
         <br>
-        Click <a href="https://www.facebook.com">here</a> to visit our Facebook page.
+        Click <a href="https://www.linkedin.com/in/nhungpth73/">here</a> to visit my LinkedIn profile.
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.href='/home.html'">OK</button>
+        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="redirectToHome()">OK</button>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function showSuccessModal(event) {
+    event.preventDefault();  // Ngăn chặn form submit mặc định
+    $('#successModal').modal('show');
+  }
+  
+  function redirectToHome() {
+    window.location.href = '/home.html';
+  }
+</script>
 {% endblock %}
