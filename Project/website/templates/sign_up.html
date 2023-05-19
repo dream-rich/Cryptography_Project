@@ -1,6 +1,9 @@
-{% extends "base.html" %} {% block title %}Sign Up{% endblock %} {% block
-content %}
-<form method="POST">
+{% extends "base.html" %}
+
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<form method="POST" action="/sign-up">
   <h3 align="center">Sign Up</h3>
   <div class="form-group">
     <label for="email">Email Address</label>
@@ -45,4 +48,25 @@ content %}
   <br />
   <button type="submit" class="btn btn-primary">Submit</button>
 </form>
+
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="successModalLabel">Sign Up Success!</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Congratulations! You have successfully signed up.
+        <br>
+        Click <a href="https://www.facebook.com">here</a> to visit our Facebook page.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-dismiss="modal" onclick="window.location.href='/home.html'">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
