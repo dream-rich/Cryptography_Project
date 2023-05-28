@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
-# from cryptography.hazmat
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
 # Khởi tạo socket client
@@ -34,6 +34,30 @@ def Menu():
     <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     """
     print(message)
+def LCG(cipher):
+    global LOGTIME
+    otp = ''
+    m = 2**31
+    a = 1103515245  
+    c = 12345  
+    seed = [0]*6
+    m0 = int(LOGTIME) % len(cipher)
+    seed[0] = (a * m0 + c) % m 
+    seed[1] = (a * seed[0] + c) % m
+    seed[2] = (a * seed[1] + c) % m
+    seed[3] = (a * seed[2] + c) % m
+    seed[4] = (a * seed[3] + c) % m
+    seed[5] = (a * seed[4] + c) % m
+    for i in seed:
+        otp_char =  str(cipher[i % len(cipher)])
+        if(otp_char.isdigit()):
+            otp += otp_char
+        else:
+            otp += str(int(ord(otp_char) % 10))
+    return otp
+    
+
+
 
 def OTPGen(username):
     global secret_key
@@ -60,9 +84,15 @@ def OTPGen(username):
         info=b'',
     ).derive(shared_key)
     # print(binascii.hexlify(shared_key))
+    # plaintext = username + email + LOGTIME
+    # print(plaintext)
+    cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    encryptor = cipher.encryptor()
     plaintext = username + email + LOGTIME
-
-    return
+    ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
+    # print(ciphertext)
+    otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
+    return otp
 
 def handle_input(message : str):
     global NAME
@@ -85,9 +115,9 @@ def handle_input(message : str):
             else:
                 timestamp = int(time.time()/60)
                 LOGTIME = str(timestamp)
-                print(timestamp)
+                # print(timestamp)
                 to_send = f"@login {username} {hashed.decode()}"
-            print(to_send)
+            # print(to_send)
             return to_send.encode()
         if message.startswith('/ecdh'):
             key = ECDH()
@@ -95,8 +125,10 @@ def handle_input(message : str):
             return to_send.encode()
         if(message.startswith('/otp')):
             to_send = message.replace('/otp','@otp')
-            OTPGen(NAME)
+            print("Here is your OTP : ",OTPGen(NAME))
             return to_send.encode()
+        if(message.startswith('/auth')):
+            return message.replace('/auth','@auth').encode()
         return message.encode()
     else:
         return None
@@ -113,7 +145,7 @@ def client_receive():
                     print(f"[NOTI] : {message}")
                 elif(message.startswith('@pk')):
                     server_public_key = message.split(' ')[1]
-                    print(server_public_key)
+                    # print(server_public_key)
                 else:
                     print(f"[NOTI] : {message}")
             else:

@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
 # Khởi tạo socket server
@@ -16,6 +17,8 @@ server_socket.listen(10)
 clients = []
 session = []
 public_key = []
+session_otp = []
+logtime = []
 print("Waiting for client connection...")
 
 # Chấp nhận kết nối từ client
@@ -32,6 +35,26 @@ def Decor():
     """
     print(message)
 
+def LCG(cipher,LOGTIME): 
+    otp = ''
+    m = 2**31
+    a = 1103515245  
+    c = 12345  
+    seed = [0]*6
+    m0 = int(LOGTIME) % len(cipher)
+    seed[0] = (a * m0 + c) % m 
+    seed[1] = (a * seed[0] + c) % m
+    seed[2] = (a * seed[1] + c) % m
+    seed[3] = (a * seed[2] + c) % m
+    seed[4] = (a * seed[3] + c) % m
+    seed[5] = (a * seed[4] + c) % m
+    for i in seed:
+        otp_char =  str(cipher[i % len(cipher)])
+        if(otp_char.isdigit()):
+            otp += otp_char
+        else:
+            otp += str(int(ord(otp_char) % 10))
+    return otp
 
 def ECDH(client_socket):
     global secret_key
@@ -94,6 +117,7 @@ def GetDictValue(dict,client):
 
 def OTPGen(client : socket.socket):
     global secret_key
+    LOGTIME = GetDictValue(logtime,client)
     username = GetDictValue(session,client)
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -116,6 +140,14 @@ def OTPGen(client : socket.socket):
         info=b'',
     ).derive(shared_key)
     # print(binascii.hexlify(shared_key))
+    cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    encryptor = cipher.encryptor()
+    plaintext = username + email + str(LOGTIME)
+    ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
+    # print(ciphertext)
+    otp = LCG(cipher=binascii.hexlify(ciphertext).decode(),LOGTIME=LOGTIME)
+    # print(otp)
+    session_otp.append({client:otp})
     return
 
 def register(username,password, email):
@@ -154,7 +186,8 @@ def handle(message : str, client : socket.socket):
         return "[+] " + username + " registered!"
     if(message.startswith("@login")):
         timestamp = int(time.time()/60)
-        print(timestamp)
+        logtime.append({client:timestamp})
+        # print(timestamp)
         username = ""
         msg = message.split(' ')
         username = msg[1]
@@ -174,11 +207,23 @@ def handle(message : str, client : socket.socket):
         return None
     if(message.startswith('@ecdh')):
         key = ECDH(client)
-        print(key)
+        # print(key)
         client_pk = message.split(' ')[1]
         send("@pk " + binascii.hexlify(key).decode(),client)
         public_key.append({client:client_pk})
         return None
+    if(message.startswith('@auth')):
+        otp = message.split(' ')[1]
+        svotp = GetDictValue(session_otp,client)
+        timeout = (time.time() - GetDictValue(logtime,client)) % 60
+        print(timeout)
+        if(otp == str(svotp)):
+            if(timeout <= 30):
+                send("Authenticated",client)
+            else:
+                send("OTP Timeouted",client)
+        else:
+            send("Wrong OTP",client)
     else:
         return message
 def handle_client(client):
