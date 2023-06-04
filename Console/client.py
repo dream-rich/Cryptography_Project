@@ -60,17 +60,10 @@ def LCG(cipher):
 
 
 def OTPGen(username):
-    global secret_key
-    global server_public_key
+    global secret_key    
     global LOGTIME
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute(
-        f"SELECT EMAIL FROM USERS WHERE USERNAME = '{username}' "
-    )
-    email = cursor.fetchall()[0][0]
-    conn.commit()
-    conn.close()
+    global server_public_key
+
     server_public_key_bytes = bytes.fromhex(server_public_key)
     server_public_key = serialization.load_der_public_key(
         server_public_key_bytes,
@@ -84,11 +77,11 @@ def OTPGen(username):
         info=b'',
     ).derive(shared_key)
     # print(binascii.hexlify(shared_key))
-    # plaintext = username + email + LOGTIME
-    # print(plaintext)
+
     cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
-    plaintext = username + email + LOGTIME
+
+    plaintext = username + str(LOGTIME)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
     # print(ciphertext)
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
@@ -178,43 +171,7 @@ def ECDH():
     format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
     # print(binascii.hexlify(public_key_der))
-    return public_key_der
-    # # Chuyển đổi khóa công khai thành định dạng bytes
-    # client_public_key_bytes = client_public_key.public_bytes(
-    #     encoding=serialization.Encoding.DER,
-    #     format=serialization.PublicFormat.SubjectPublicKeyInfo
-    # )
-    # client_public_key_size = len(client_public_key_bytes)
-
-    # # Gửi kích thước khóa công khai đến server
-    # client_socket.sendall(struct.pack('!I', client_public_key_size))
-
-    # # Gửi khóa công khai đến server
-    # client_socket.sendall(client_public_key_bytes)
-    # print("Public key sent")
-
-    # # Nhận kích thước và khóa công khai của server từ server
-    # server_public_key_size = struct.unpack('!I', client_socket.recv(4))[0]
-    # server_public_key_bytes = client_socket.recv(server_public_key_size)
-    # print("Public key received")
-
-    # # Chuyển đổi khóa công khai của server từ bytes thành đối tượng
-    # server_public_key = serialization.load_der_public_key(
-    #     server_public_key_bytes,
-    #     backend=default_backend()
-    # )
-
-    # # Tính toán khóa chung
-    # shared_key = client_private_key.exchange(ec.ECDH(), server_public_key)
-    # shared_key = HKDF(
-    #     algorithm=hashes.SHA256(),
-    #     length=32,
-    #     salt=None,
-    #     info=b'',
-    # ).derive(shared_key)
-
-    # print("Shared secret key:", shared_key.hex())
-    # return shared_key
+    return public_key_der    
 
 def main():
     receive_thread = threading.Thread(target=client_receive)

@@ -58,10 +58,6 @@ def LCG(cipher,LOGTIME):
 
 def ECDH(client_socket):
     global secret_key
-# Gửi tên curve đến client
-    # curve_name = "nistP256".encode('ascii')
-    # client_socket.sendall(curve_name)
-    # print("Curve name sent")
 
     # Khởi tạo khóa riêng và khóa công khai của server
     secret_key = server_private_key = ec.generate_private_key(ec.SECP256R1())
@@ -71,40 +67,6 @@ def ECDH(client_socket):
     format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
     return server_public_key_der
-
-    # # Chuyển đổi khóa công khai thành định dạng bytes
-    # server_public_key_bytes = server_public_key.public_bytes(
-    #     encoding=serialization.Encoding.DER,
-    #     format=serialization.PublicFormat.SubjectPublicKeyInfo
-    # )
-    # server_public_key_size = len(server_public_key_bytes)
-
-    # # Gửi kích thước khóa công khai đến client
-    # client_socket.sendall(struct.pack('!I', server_public_key_size))
-
-    # # Gửi khóa công khai đến client
-    # client_socket.sendall(server_public_key_bytes)
-    # print("Public key sent")
-
-    # # Nhận kích thước và khóa công khai của client từ client
-    # client_public_key_size = struct.unpack('!I', client_socket.recv(4))[0]
-    # client_public_key_bytes = client_socket.recv(client_public_key_size)
-    # print("Public key received")
-
-    # # Chuyển đổi khóa công khai của client từ bytes thành đối tượng
-    # client_public_key = serialization.load_der_public_key(
-    #     client_public_key_bytes,
-    #     backend=default_backend()
-    # )
-
-    # # Tính toán khóa chung
-    # shared_key = server_private_key.exchange(ec.ECDH(), client_public_key)
-    # shared_key = HKDF(
-    #     algorithm=hashes.SHA256(),
-    #     length=32,
-    #     salt=None,
-    #     info=b'',
-    # ).derive(shared_key)
 
     # print("Shared secret key:", shared_key.hex())
 
@@ -119,14 +81,7 @@ def OTPGen(client : socket.socket):
     global secret_key
     LOGTIME = GetDictValue(logtime,client)
     username = GetDictValue(session,client)
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute(
-        f"SELECT EMAIL FROM USERS WHERE USERNAME = '{username}' "
-    )
-    email = cursor.fetchall()[0][0]
-    conn.commit()
-    conn.close()
+ 
     client_public_key_bytes = bytes.fromhex(GetDictValue(public_key,client)) 
     client_public_key = serialization.load_der_public_key(
         client_public_key_bytes,
@@ -142,7 +97,8 @@ def OTPGen(client : socket.socket):
     # print(binascii.hexlify(shared_key))
     cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
-    plaintext = username + email + str(LOGTIME)
+    # plaintext = username + email + str(LOGTIME)
+    plaintext = username + str(LOGTIME)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
     # print(ciphertext)
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode(),LOGTIME=LOGTIME)
