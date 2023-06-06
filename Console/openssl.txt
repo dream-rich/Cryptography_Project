@@ -1,0 +1,27 @@
+openssl genpkey -algorithm RSA -out server.key -pkeyopt rsa_keygen_bits:2048
+
+openssl req -new -key server.key -out server.csr
+
+Country Name (2 letter code) [AU]:VN
+State or Province Name (full name) [Some-State]:Ho Chi Minh City
+Locality Name (eg, city) []:Ho Chi Minh City
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:UIT
+Organizational Unit Name (eg, section) []:IT
+Common Name (e.g. server FQDN or YOUR name) []:Nhung
+Email Address []:hongnhungpt73@gmail.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+An optional company name []:
+
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
+
+#Check version: 
+
+$ openssl version
+
+OpenSSL 3.1.0 14 Mar 2023 (Library: OpenSSL 3.1.0 14 Mar 2023)
+
+(TLS 1.3 (Default))
