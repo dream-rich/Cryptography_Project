@@ -61,9 +61,6 @@ def LCG(cipher):
             otp += str(int(ord(otp_char) % 10))
     return otp
     
-
-
-
 def OTPGen(username):
     global secret_key    
     global LOGTIME
