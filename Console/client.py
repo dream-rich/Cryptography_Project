@@ -3,11 +3,16 @@ import struct
 import sqlite3, random
 import hashlib , binascii, threading
 import time
+import ssl
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+context.load_verify_locations("server.crt")  # Đường dẫn đến file chứng chỉ công cộng của server
+context.verify_mode = ssl.CERT_REQUIRED
 
 
 # Khởi tạo socket client
