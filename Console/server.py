@@ -11,7 +11,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-context.load_cert_chain(certfile="server.crt", keyfile="server.key")  # Đường dẫn đến file chứng chỉ và khóa cá nhân của server
+context.load_cert_chain(certfile="server.crt", keyfile="server.key")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -30,13 +30,15 @@ def send(message : str,client : socket.socket):
    client.send(message.encode())
 
 def Decor():
-    message = """
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    One Time Password (OTP) Based on Advanced Encrypted Standard (AES) 
-                and Linear Congruential Generator(LCG)
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    content = """
+    +------------------------------------------------------------------+
+    |  One Time Password (OTP) Based on Advanced Encrypted Standard    |
+    |            (AES) and Linear Congruential Generator(LCG)          |
+    +------------------------------------------------------------------+
     """
-    print(message)
+
+    print(content)
 
 def LCG(cipher,LOGTIME): 
     otp = ''
@@ -109,17 +111,21 @@ def OTPGen(client : socket.socket):
     session_otp.append({client:otp})
     return
 
-def register(username,password, email):
+
+def signup(username, password, email):
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    cursor.execute(
-        f"INSERT INTO USERS VALUES ('{username}','{password}','{email}')"
-    )
+
+    query = "INSERT INTO USERS VALUES (?, ?, ?)"
+    values = (username, password, email)
+
+    cursor.execute(query, values)
+
     conn.commit()
     conn.close()
     return
 
-def login(username,password):
+def signin(username,password):
   conn = sqlite3.connect('database.db')
   c = conn.cursor()
   c.execute(
@@ -132,18 +138,19 @@ def login(username,password):
      return True
   else:
      return False
+  
 def handle(message : str, client : socket.socket):
-    if(message.startswith("@register")):
+    if(message.startswith("@signup")):
         username = ""
         msg = message.split(' ')
         username = msg[1]
         password = msg[2]
         email = msg[3]
-        send("Registered, please login.",client)
-        register_thread = threading.Thread(target=register,args=[username,password,email])
-        register_thread.start()
-        return "[+] " + username + " registered!"
-    if(message.startswith("@login")):
+        send("You have signed up, let's sign in.",client)
+        signup_thread = threading.Thread(target=signup,args=[username,password,email])
+        signup_thread.start()
+        return "[+] " + username + " signed up!"
+    if(message.startswith("@signin")):
         timestamp = int(time.time()/60)
         logtime.append({client:timestamp})
         # print(timestamp)
@@ -151,9 +158,8 @@ def handle(message : str, client : socket.socket):
         msg = message.split(' ')
         username = msg[1]
         password = msg[2]
-        logged = login(username,password)
+        logged = signin(username,password)
         if(logged):
-        #   session.append({client:id})
             session.append({client:username})
             send("Please enter OTP to authorize",client)
             return None
@@ -185,24 +191,28 @@ def handle(message : str, client : socket.socket):
             send("Wrong OTP",client)
     else:
         return message
+
 def handle_client(client):
-  while True:
-      try:
-          message = client.recv(4096)
-          msg = handle(message=message.decode(),client=client)
-          if(msg):
-            print(f"[LOG] : {msg}")   
-      except:
-          index = clients.index(client)
-          clients.remove(client)
-          client.close()
-          break
-        
+    while True:
+        try:
+            data = client.recv(4096)
+            if not data:
+                break
+            message = data.decode()
+            msg = handle(message=message, client=client)
+            if msg:
+                print(f"[POST]: {msg}")
+        except Exception as e:
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            break
+
 def LISTEN():
     while True:
         client, addr = server_socket.accept()
-        thread = threading.Thread(target=handle_client,args=(client,))
-        thread.start()
+        client_thread = threading.Thread(target=handle_client, args=(client,))
+        client_thread.start()
         clients.append(client)
 
 def main():

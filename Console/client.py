@@ -4,6 +4,7 @@ import sqlite3, random
 import hashlib , binascii, threading
 import time
 import ssl
+
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -11,7 +12,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-context.load_verify_locations("server.crt")  # Đường dẫn đến file chứng chỉ công cộng của server
+context.load_verify_locations("server.crt")  
 context.verify_mode = ssl.CERT_REQUIRED
 
 
@@ -21,24 +22,30 @@ client_socket.connect(('127.0.0.1', 1234))
 print("Connected to server!")
 
 def Decor():
-    message = """
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    One Time Password (OTP) Based on Advanced Encrypted Standard (AES) 
-                and Linear Congruential Generator(LCG)
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    content = """
+    +------------------------------------------------------------------+
+    |  One Time Password (OTP) Based on Advanced Encrypted Standard    |
+    |            (AES) and Linear Congruential Generator(LCG)          |
+    +------------------------------------------------------------------+
     """
-    print(message)
+
+    print(content)
 
 def Menu():
-    message = """
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 
-
-    /register <username> <password> <email>  : register
-    /login <username> <password>             : login
-
-    <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    content = """
+    +------------------------------------------------------------+
+    |                                                            |
+    |                 Welcome to the Menu                        |
+    |                                                            |
+    |    /signup <username> <password> <email>  : signup         |
+    |    /signin <username> <password>           : signin         |
+    |                                                            |
+    +------------------------------------------------------------+
     """
-    print(message)
+
+    print(content)
+
 def LCG(cipher):
     global LOGTIME
     otp = ''
@@ -89,60 +96,66 @@ def OTPGen(username):
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
     return otp
 
-def handle_input(message : str):
+def get_input(content: str):
+
     global NAME
     global LOGTIME
-    if(message):
-        if message.startswith('/menu'):
-            Menu() 
+
+    if content:
+        if content.startswith('/menu'):
+            Menu()
             return None
-        if message.startswith('/register') or message.startswith('/login'):
-            msg = message.split(' ')
-            prefix = msg[0]
-            username = msg[1]
-            password = msg[2]
+
+        if content.startswith(('/signup', '/signin')):
+            command, *args = content.split(' ')
+            username, password, *additional_args = args
             salt = password[2:6]
             NAME = username
             hashed = binascii.hexlify(hashlib.sha256((password + salt).encode()).digest())
-            if(prefix == '/register'):
-                email = msg[3]
-                to_send = f"@register {username} {hashed.decode()} {email}"
+
+            if command == '/signup':
+                email = additional_args[0]
+                to_send = f"@signup {username} {hashed.decode()} {email}"
             else:
-                timestamp = int(time.time()/60)
+                timestamp = int(time.time() / 60)
                 LOGTIME = str(timestamp)
-                # print(timestamp)
-                to_send = f"@login {username} {hashed.decode()}"
-            # print(to_send)
+                to_send = f"@signin {username} {hashed.decode()}"
+
             return to_send.encode()
-        if message.startswith('/ecdh'):
+
+        if content.startswith('/ecdh'):
             key = ECDH()
             to_send = f'@ecdh {binascii.hexlify(key).decode()}'
             return to_send.encode()
-        if(message.startswith('/otp')):
-            to_send = message.replace('/otp','@otp')
-            print("Here is your OTP : ",OTPGen(NAME))
+
+        if content.startswith('/otp'):
+            to_send = content.replace('/otp', '@otp')
+            otp = OTPGen(NAME)
+            print("[POST] One Time Password (OTP)", f"Here is your OTP: {otp}")
             return to_send.encode()
-        if(message.startswith('/auth')):
-            return message.replace('/auth','@auth').encode()
-        return message.encode()
+
+        if content.startswith('/auth'):
+            return content.replace('/auth', '@auth').encode()
+
+        return content.encode()
     else:
         return None
 
 def client_receive():
-    global isAuth
+    global Check
     global server_public_key
     while True:
         try:
-            message = client_socket.recv(2048).decode('utf-8')
-            if(message):
-                if(message.startswith('Logged in!')):
-                    isAuth = True
-                    print(f"[NOTI] : {message}")
-                elif(message.startswith('@pk')):
-                    server_public_key = message.split(' ')[1]
+            content = client_socket.recv(2048).decode('utf-8')
+            if(content):
+                if(content.startswith('You have signed in!')):
+                    Check = True
+                    print(f"[POST] : {content}")
+                elif(content.startswith('@pk')):
+                    server_public_key = content.split(' ')[1]
                     # print(server_public_key)
                 else:
-                    print(f"[NOTI] : {message}")
+                    print(f"[POST] : {content}")
             else:
                 pass
         except:
@@ -152,17 +165,14 @@ def client_receive():
 
 def client_send():
     while True:
-        message = handle_input(input(">> "))
-        if(message):
-            client_socket.send(message)
-            # print(message)
+        user_input = get_input(input("$ "))
+        if user_input:
+            client_socket.send(user_input)
+
 
 
 def ECDH():
     global secret_key
-    # # Nhận tên curve từ server
-    # curve_name = client_socket.recv(8).decode('ascii')
-    # print("Curve name received")
 
     # Khởi tạo khóa riêng và khóa công khai của client
     client_private_key = ec.generate_private_key(ec.SECP256R1())
