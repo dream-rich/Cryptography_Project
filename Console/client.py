@@ -15,10 +15,13 @@ context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 context.load_verify_locations("server.crt")  
 context.verify_mode = ssl.CERT_REQUIRED
 
+# Global variables
+stop_thread = False
+otp = ''
 
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('127.0.0.1', 1234))
+client_socket.connect(('127.0.0.1', 999))
 print("Connected to server!")
 
 def Decor():
@@ -39,7 +42,8 @@ def Menu():
     |                 Welcome to the Menu                        |
     |                                                            |
     |    /signup <username> <password> <email>  : signup         |
-    |    /signin <username> <password>           : signin         |
+    |    /signin <username> <password>          : signin         |
+    |    /auth   <OTP>                          : OTP            | 
     |                                                            |
     +------------------------------------------------------------+
     """
@@ -67,11 +71,46 @@ def LCG(cipher):
         else:
             otp += str(int(ord(otp_char) % 10))
     return otp
+
+def ECDH():
+    global secret_key
     
-def OTPGen(username):
-    global secret_key    
+    # Khởi tạo khóa riêng và khóa công khai của client
+    client_private_key = ec.generate_private_key(ec.SECP256R1())
+    secret_key = client_private_key
+    client_public_key = client_private_key.public_key()
+    public_key_der = client_public_key.public_bytes(
+    encoding=serialization.Encoding.DER,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    return public_key_der   
+
+def generate_new_otp():
+    global otp
+    global stop_thread
     global LOGTIME
     global server_public_key
+    
+    temp = server_public_key
+
+    try:
+        otp = OTPGen(temp)
+        print(f"[POST]: New OTP generated: {otp}")
+        
+        while stop_thread != True:        
+            time.sleep(30)
+            LOGTIME = str(int(time.time()))
+            otp = OTPGen(temp)
+            print(f"[POST]: New OTP generated: {otp}")    
+    
+    except Exception as e:
+        print(e)
+            
+def OTPGen(server_public_key):
+    global secret_key    
+    global NAME
+    global LOGTIME
 
     server_public_key_bytes = bytes.fromhex(server_public_key)
     server_public_key = serialization.load_der_public_key(
@@ -85,22 +124,21 @@ def OTPGen(username):
         salt=None,
         info=b'',
     ).derive(shared_key)
-    # print(binascii.hexlify(shared_key))
 
     cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
-    plaintext = username + str(LOGTIME)
+    plaintext = NAME + str(LOGTIME)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
-    # print(ciphertext)
+
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
+    
     return otp
 
 def get_input(content: str):
-
     global NAME
     global LOGTIME
-
+    
     if content:
         if content.startswith('/menu'):
             Menu()
@@ -117,21 +155,10 @@ def get_input(content: str):
                 email = additional_args[0]
                 to_send = f"@signup {username} {hashed.decode()} {email}"
             else:
-                timestamp = int(time.time() / 60)
-                LOGTIME = str(timestamp)
-                to_send = f"@signin {username} {hashed.decode()}"
+                LOGTIME = str(int(time.time()))
+                key = ECDH()
+                to_send = f"@signin {username} {hashed.decode()} {binascii.hexlify(key).decode()}"
 
-            return to_send.encode()
-
-        if content.startswith('/ecdh'):
-            key = ECDH()
-            to_send = f'@ecdh {binascii.hexlify(key).decode()}'
-            return to_send.encode()
-
-        if content.startswith('/otp'):
-            to_send = content.replace('/otp', '@otp')
-            otp = OTPGen(NAME)
-            print("[POST] One Time Password (OTP)", f"Here is your OTP: {otp}")
             return to_send.encode()
 
         if content.startswith('/auth'):
@@ -140,50 +167,47 @@ def get_input(content: str):
         return content.encode()
     else:
         return None
-
+    
+    
 def client_receive():
     global Check
     global server_public_key
+    global stop_thread
+    
     while True:
         try:
-            content = client_socket.recv(2048).decode('utf-8')
+            content = client_socket.recv(4096).decode('utf-8')
             if(content):
                 if(content.startswith('You have signed in!')):
                     Check = True
-                    print(f"[POST] : {content}")
+                    print(f"[POST]: {content}")
                 elif(content.startswith('@pk')):
                     server_public_key = content.split(' ')[1]
-                    # print(server_public_key)
+                    print("Please enter OTP to authorize")
+                    threading.Thread(target=generate_new_otp).start()    
+                elif(content.startswith('Authenticated')):
+                    print(f"[POST]: {content}")
+                    stop_thread = True
                 else:
-                    print(f"[POST] : {content}")
+                    print(f"[POST]: {content}")
             else:
                 pass
-        except:
-            print('Error!')
+        
+        except Exception as e:
+            print(e)
             client_socket.close()
             break
 
 def client_send():
     while True:
-        user_input = get_input(input("$ "))
-        if user_input:
-            client_socket.send(user_input)
-
-
-
-def ECDH():
-    global secret_key
-
-    # Khởi tạo khóa riêng và khóa công khai của client
-    client_private_key = ec.generate_private_key(ec.SECP256R1())
-    secret_key = client_private_key
-    client_public_key = client_private_key.public_key()
-    public_key_der = client_public_key.public_bytes(
-    encoding=serialization.Encoding.DER,
-    format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    # print(binascii.hexlify(public_key_der))
-    return public_key_der    
+        try:
+            user_input = get_input(input("$ "))
+            if user_input:
+                client_socket.send(user_input)
+        except Exception as e:
+            print(e)
+            client_socket.close()
+            break 
 
 def main():
     receive_thread = threading.Thread(target=client_receive)
@@ -195,9 +219,10 @@ def main():
 if __name__=="__main__":
     global secret_key
     global server_public_key
-    global NAME 
+    global NAME
     global LOGTIME
     Decor()
+    Menu()
     main()
 
 
