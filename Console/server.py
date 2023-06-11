@@ -186,7 +186,6 @@ def auth(rcv, client):
                 send("OTP expired",client)
         else:
             send("Wrong OTP",client)
-
     return
 
 def handle(message : str, client : socket.socket):
@@ -199,7 +198,6 @@ def handle(message : str, client : socket.socket):
 
         signup_thread = threading.Thread(target=signup,args=[username,password,email])
         signup_thread.start()
-
         state = signup(username, password,email)
         if state == True:
             print("[+] " + username + " signed up!")
@@ -217,7 +215,6 @@ def handle(message : str, client : socket.socket):
             password = msg[2]
             logged = signin(username,password)
             logtime.append({client:int(time.time())})
-
             if(logged):
                 # ECDH
                 key = ECDH(client)
@@ -250,7 +247,6 @@ def handle(message : str, client : socket.socket):
             send("Client requested new OTP",client)
             logtime.append({client:int(time.time())})
             threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
-
             rcv_2 = client.recv(1024).decode()
             auth(rcv_2, client)
         except Exception as e:
