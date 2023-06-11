@@ -151,6 +151,23 @@ def signin(username,password):
     else:
         return False
   
+def auth(rcv, client):  
+    otp_rcv = rcv.split(' ')[1]
+    if(rcv.startswith("@auth")):
+        if(otp_rcv == otp):
+            timeout = float(time.time()) - int(GetDictValue(logtime, client))
+            print(f"Timeout: {timeout} seconds")
+            if(timeout) <= 30:
+                print("[+] " + GetDictValue(session,client) + " verified!")
+                send("Authenticated",client)
+            else: 
+                send("OTP expired",client)                
+        else:
+            send("Wrong OTP",client)
+            
+    return
+
+
 def handle(message : str, client : socket.socket):
     if(message.startswith("@signup")):
         username = ""
@@ -166,60 +183,51 @@ def handle(message : str, client : socket.socket):
         return
         
     if(message.startswith("@signin")):
-        username = ""
-        msg = message.split(' ')
-        username = msg[1]
-        password = msg[2]
-        logged = signin(username,password)
-        
-        if(logged):                       
-            # ECDH
-            key = ECDH(client)
-            client_pk = message.split(' ')[3]
-            send("@pk " + binascii.hexlify(key).decode(),client)
-            public_key.append({client:client_pk})
+        try:
+            username = ""
+            msg = message.split(' ')
+            username = msg[1]
+            password = msg[2]
+            logged = signin(username,password)
+            logtime.append({client:int(time.time())})
             
-            # Notify client
-            session.append({client:username})
-            print("[+] " + username + " signed in!")
-            
-            # OTP verification
-            otp_thread = threading.Thread(target=generate_OTP,args=(client, int(time.time())))
-            otp_thread.start()      
-            
-            rcv = client.recv(1024).decode()
-            otp_rcv = rcv.split(' ')[1]
-            
-        else:
-           send("Wrong password",client)     
-           return   
-           
-        if(rcv.startswith("@auth")):
-            if(otp_rcv == otp):
-                print("[+] " + username + " verified!")
-                send("Authenticated",client)
+            if(logged):                       
+                # ECDH
+                key = ECDH(client)
+                client_pk = message.split(' ')[3]
+                send("@pk " + binascii.hexlify(key).decode(),client)
+                public_key.append({client:client_pk})
+                
+                # Notify client
+                session.append({client:username})
+                print("[+] " + username + " signed in!")
+                
+                # OTP verification
+                otp_thread = threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime,client)))
+                otp_thread.start()      
+                
+                rcv = client.recv(1024).decode()
+                auth(rcv, client)
+                
             else:
-                send("Wrong OTP",client)
-
-        else:
-            send("Wrong OTP",client)
+                send("Wrong password",client)     
+                return   
+     
+            return
+        except Exception as e:
+            print(e)
             
-        return
-    
     if(message.startswith("@resend")):
-        send("Client requested new OTP",client)
-        threading.Thread(target=generate_OTP,args=(client, int(time.time()))).start()
-        
-        rcv_2 = client.recv(1024).decode()
-        otp_rcv_2 = rcv_2.split(' ')[1]
-        
-        if(rcv_2.startswith("@auth")):
-            if(otp_rcv_2 == otp):
-                print("[+] verified!")
-                send("Authenticated",client)
-            else:
-                send("Wrong OTP",client)
-        
+        try: 
+            logtime.pop()
+            send("Client requested new OTP",client)
+            logtime.append({client:int(time.time())})
+            threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
+            
+            rcv_2 = client.recv(1024).decode()
+            auth(rcv_2, client)
+        except Exception as e:
+            print(e)        
 
 def handle_client(client):
     while True:
