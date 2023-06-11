@@ -68,6 +68,30 @@ def LCG(cipher):
     return otp
 
 
+def client_receive():
+    global Check
+    global server_public_key
+    while True:
+        try:
+            content = client_socket.recv(4096).decode('utf-8')
+            if(content):
+                if(content.startswith('You have signed in!')):
+                    Check = True
+                    print(f"[POST] : {content}")
+                elif(content.startswith('@pk')):
+                    server_public_key = content.split(' ')[1]
+                    threading.Thread(target=generate_new_otp).start()    
+                    print(server_public_key)
+                else:
+                    print(f"[POST] : {content}")
+            else:
+                pass
+        except:
+            print('Error!')
+            client_socket.close()
+            break
+
+
 def ECDH():
     global secret_key
 
@@ -82,6 +106,26 @@ def ECDH():
     # print(binascii.hexlify(public_key_der))
     return public_key_der    
 
+def generate_new_otp():
+    global otp
+    global stop_thread
+    global LOGTIME
+    global server_public_key
+    
+    temp = server_public_key
+
+    try:
+        otp = OTPGen(temp)
+        print(f"[POST]: New OTP generated: {otp}")
+        
+        while stop_thread != True:        
+            time.sleep(30)
+            LOGTIME = str(int(time.time()))
+            otp = OTPGen(temp)
+            print(f"[POST]: New OTP generated: {otp}")    
+    
+    except Exception as e:
+        print(e)
 
 def OTPGen(username):
     global secret_key    
@@ -110,26 +154,7 @@ def OTPGen(username):
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
     return otp
 
-def generate_new_otp():
-    global otp
-    global stop_thread
-    global LOGTIME
-    global server_public_key
-    
-    temp = server_public_key
 
-    try:
-        otp = OTPGen(temp)
-        print(f"[POST]: New OTP generated: {otp}")
-        
-        while stop_thread != True:        
-            time.sleep(30)
-            LOGTIME = str(int(time.time()))
-            otp = OTPGen(temp)
-            print(f"[POST]: New OTP generated: {otp}")    
-    
-    except Exception as e:
-        print(e)
 
 def get_input(content: str):
 
@@ -177,30 +202,6 @@ def get_input(content: str):
         return content.encode()
     else:
         return None
-
-def client_receive():
-    global Check
-    global server_public_key
-    while True:
-        try:
-            content = client_socket.recv(4096).decode('utf-8')
-            if(content):
-                if(content.startswith('You have signed in!')):
-                    Check = True
-                    print(f"[POST] : {content}")
-                elif(content.startswith('@pk')):
-                    server_public_key = content.split(' ')[1]
-                    print("Please enter OTP to authorize")
-                    threading.Thread(target=generate_new_otp).start()    
-    # print(server_public_key)
-                else:
-                    print(f"[POST] : {content}")
-            else:
-                pass
-        except:
-            print('Error!')
-            client_socket.close()
-            break
 
 def client_send():
     while True:
