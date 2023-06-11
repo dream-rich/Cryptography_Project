@@ -26,8 +26,8 @@ print("Waiting for client connection...")
 
 # Chấp nhận kết nối từ client
 
-def send(message : str,client : socket.socket):
-   client.send(message.encode())
+def send(content : str,client : socket.socket):
+   client.send(content.encode())
 
 def Decor():
 
@@ -139,10 +139,27 @@ def signin(username,password):
   else:
      return False
   
-def handle(message : str, client : socket.socket):
-    if(message.startswith("@signup")):
+def generate_new_OTP(client : socket.socket, logtime):
+    global stop_thread
+    global otp
+    
+    try:
+        otp = OTPGen(client, logtime)
+        print(f"OTP 1: {otp}")
+        
+        while stop_thread != True:
+            time.sleep(30)           
+            timestamp = int(time.time())
+            otp = OTPGen(client, timestamp)
+            print(f"New OTP: {otp}")
+                
+    except Exception as e:
+        print(e)
+
+def handle(content : str, client : socket.socket):
+    if(content.startswith("@signup")):
         username = ""
-        msg = message.split(' ')
+        msg = content.split(' ')
         username = msg[1]
         password = msg[2]
         email = msg[3]
@@ -150,35 +167,61 @@ def handle(message : str, client : socket.socket):
         signup_thread = threading.Thread(target=signup,args=[username,password,email])
         signup_thread.start()
         return "[+] " + username + " signed up!"
-    if(message.startswith("@signin")):
+    if(content.startswith("@signin")):
         timestamp = int(time.time()/60)
         logtime.append({client:timestamp})
         # print(timestamp)
         username = ""
-        msg = message.split(' ')
+        msg = content.split(' ')
         username = msg[1]
         password = msg[2]
         logged = signin(username,password)
         if(logged):
             session.append({client:username})
+            print("[+] " + username + " signed in!")
+            
             send("Please enter OTP to authorize",client)
-            return None
+            key = ECDH(client)
+            client_pk = content.split(' ')[3]
+            send("@pk " + binascii.hexlify(key).decode(),client)
+            public_key.append({client:client_pk})            
+
+            # OTP verification
+            otp_thread = threading.Thread(target=generate_new_OTP,args=(client, timestamp))
+            otp_thread.start()      
+            
+            rcv = client.recv(1024).decode()
+            otp_rcv = rcv.split(' ')[1]
+            stop_thread = True
+            
         else:
-           send("Wrong password",client)
-           return None
-    if(message.startswith('@otp')):
-        otp_thread = threading.Thread(target=OTPGen,args=[client])
-        otp_thread.start()
-        return None
-    if(message.startswith('@ecdh')):
-        key = ECDH(client)
-        # print(key)
-        client_pk = message.split(' ')[1]
-        send("@pk " + binascii.hexlify(key).decode(),client)
-        public_key.append({client:client_pk})
-        return None
-    if(message.startswith('@auth')):
-        otp = message.split(' ')[1]
+           send("Wrong password",client)     
+           return   
+           
+        if(otp_rcv == otp):
+            print("[+] " + username + " verified!")
+            send("Authenticated",client)
+            stop_thread = True
+        else:
+            send("Wrong OTP",client)
+            
+        return
+
+        #     session.append({client:username})
+        #     key = ECDH(client)  # Thực hiện trao đổi khóa ECDH
+        #     client_pk = content.split(' ')[1]
+        #     send("@pk " + binascii.hexlify(key).decode(),client)
+        #     public_key.append({client:client_pk})
+        #     OTPGen(client)  # Tạo mã OTP và gửi cho client
+        #     send("Please enter OTP to authorize", client)  # Hiển thị thông báo cho client
+        #     return None
+
+        # else:
+        #    send("Wrong password",client)
+        #    return None
+
+    if(content.startswith('@auth')):
+        otp = content.split(' ')[1]
         svotp = GetDictValue(session_otp,client)
         timeout = (time.time() - GetDictValue(logtime,client)) % 60
         print(timeout)
@@ -190,7 +233,7 @@ def handle(message : str, client : socket.socket):
         else:
             send("Wrong OTP",client)
     else:
-        return message
+        return content
 
 def handle_client(client):
     while True:
@@ -198,8 +241,8 @@ def handle_client(client):
             data = client.recv(4096)
             if not data:
                 break
-            message = data.decode()
-            msg = handle(message=message, client=client)
+            content = data.decode()
+            msg = handle(content=content, client=client)
             if msg:
                 print(f"[POST]: {msg}")
         except Exception as e:
