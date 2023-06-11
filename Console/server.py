@@ -84,19 +84,12 @@ def GetDictValue(dict,client):
             if key == client:
                 return str(i[key])
 
-def generate_new_OTP(client : socket.socket, logtime):
-    global stop_thread
+def generate_OTP(client : socket.socket, logtime):
     global otp
     
     try:
         otp = OTPGen(client, logtime)
-        print(f"OTP 1: {otp}")
-        
-        while stop_thread != True:
-            time.sleep(30)           
-            timestamp = int(time.time())
-            otp = OTPGen(client, timestamp)
-            print(f"New OTP: {otp}")
+        print(f"OTP: {otp}")
                 
     except Exception as e:
         print(e)
@@ -159,8 +152,6 @@ def signin(username,password):
         return False
   
 def handle(message : str, client : socket.socket):
-    global stop_thread
-    
     if(message.startswith("@signup")):
         username = ""
         msg = message.split(' ')
@@ -175,8 +166,6 @@ def handle(message : str, client : socket.socket):
         return
         
     if(message.startswith("@signin")):
-        timestamp = int(time.time())
-        print(timestamp)
         username = ""
         msg = message.split(' ')
         username = msg[1]
@@ -195,25 +184,42 @@ def handle(message : str, client : socket.socket):
             print("[+] " + username + " signed in!")
             
             # OTP verification
-            otp_thread = threading.Thread(target=generate_new_OTP,args=(client, timestamp))
+            otp_thread = threading.Thread(target=generate_OTP,args=(client, int(time.time())))
             otp_thread.start()      
             
             rcv = client.recv(1024).decode()
             otp_rcv = rcv.split(' ')[1]
-            stop_thread = True
             
         else:
            send("Wrong password",client)     
            return   
            
-        if(otp_rcv == otp):
-            print("[+] " + username + " verified!")
-            send("Authenticated",client)
-            stop_thread = True
+        if(rcv.startswith("@auth")):
+            if(otp_rcv == otp):
+                print("[+] " + username + " verified!")
+                send("Authenticated",client)
+            else:
+                send("Wrong OTP",client)
+
         else:
             send("Wrong OTP",client)
             
         return
+    
+    if(message.startswith("@resend")):
+        send("Client requested new OTP",client)
+        threading.Thread(target=generate_OTP,args=(client, int(time.time()))).start()
+        
+        rcv_2 = client.recv(1024).decode()
+        otp_rcv_2 = rcv_2.split(' ')[1]
+        
+        if(rcv_2.startswith("@auth")):
+            if(otp_rcv_2 == otp):
+                print("[+] verified!")
+                send("Authenticated",client)
+            else:
+                send("Wrong OTP",client)
+        
 
 def handle_client(client):
     while True:

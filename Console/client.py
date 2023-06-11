@@ -16,7 +16,6 @@ context.load_verify_locations("server.crt")
 context.verify_mode = ssl.CERT_REQUIRED
 
 # Global variables
-stop_thread = False
 otp = ''
 
 # Khởi tạo socket client
@@ -86,9 +85,8 @@ def ECDH():
 
     return public_key_der   
 
-def generate_new_otp():
+def generate_otp():
     global otp
-    global stop_thread
     global LOGTIME
     global server_public_key
     
@@ -96,13 +94,22 @@ def generate_new_otp():
 
     try:
         otp = OTPGen(temp)
+        print(f"[POST]: OTP generated: {otp}")
+
+    except Exception as e:
+        print(e)
+
+def generate_new_otp():
+    global otp
+    global LOGTIME
+    global server_public_key
+    
+    temp = server_public_key
+    LOGTIME = int(time.time())
+
+    try:
+        otp = OTPGen(temp)
         print(f"[POST]: New OTP generated: {otp}")
-        
-        while stop_thread != True:        
-            time.sleep(30)
-            LOGTIME = str(int(time.time()))
-            otp = OTPGen(temp)
-            print(f"[POST]: New OTP generated: {otp}")    
     
     except Exception as e:
         print(e)
@@ -161,6 +168,8 @@ def get_input(content: str):
 
             return to_send.encode()
 
+        if content.startswith('/resend'):
+            return content.replace('/resend', '@resend').encode()
         if content.startswith('/auth'):
             return content.replace('/auth', '@auth').encode()
 
@@ -172,7 +181,6 @@ def get_input(content: str):
 def client_receive():
     global Check
     global server_public_key
-    global stop_thread
     
     while True:
         try:
@@ -184,10 +192,11 @@ def client_receive():
                 elif(content.startswith('@pk')):
                     server_public_key = content.split(' ')[1]
                     print("Please enter OTP to authorize")
-                    threading.Thread(target=generate_new_otp).start()    
+                    threading.Thread(target=generate_otp).start()    
+                elif(content.startswith('Client requested new OTP')):
+                    threading.Thread(target=generate_new_otp).start()
                 elif(content.startswith('Authenticated')):
                     print(f"[POST]: {content}")
-                    stop_thread = True
                 else:
                     print(f"[POST]: {content}")
             else:
