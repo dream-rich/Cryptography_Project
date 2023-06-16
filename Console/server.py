@@ -9,7 +9,16 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
+import json, requests
+# Database=========================================
+url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-wwzqj/endpoint/data/v1/action/"
+apikey = open("api.key",'r').read()
+headers = {
+  'Content-Type': 'application/json',
+  'Access-Control-Request-Headers': '*',
+  'api-key': apikey,
+} 
+# =========================================
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
@@ -36,6 +45,19 @@ print("Waiting for client connection...")
 def send(message : str,client : socket.socket):
    client.send(message.encode())
 
+def uploadUser(username,email,password):
+    action = url + "insertOne"
+    payload = json.dumps({
+    "collection": "Users",
+    "database": "Data",
+    "dataSource": "MMH",
+    "document": {
+        "name": username,
+        "email": email,
+        "password": password
+    }
+    })
+    requests.request("POST", action, headers=headers, data=payload)
 def Decor():
 
     content = """
@@ -127,16 +149,7 @@ def OTPGen(client : socket.socket, LOGTIME):
     return otp
 
 def signup(username, password, email):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-
-    query = "INSERT INTO USERS VALUES (?, ?, ?)"
-    values = (username, password, email)
-
-    cursor.execute(query, values)
-
-    conn.commit()
-    conn.close()
+    uploadUser(username=username,email=email,password=password)
     return
 
 def signin(username,password):
