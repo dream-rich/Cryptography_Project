@@ -11,7 +11,8 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+context.minimum_version = ssl.TLSVersion.TLSv1_3
 context.load_verify_locations("server.crt")  
 context.verify_mode = ssl.CERT_REQUIRED
 
@@ -20,7 +21,7 @@ otp = ''
 
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('127.0.0.1', 999))
+client_socket.connect(('40.81.29.50', 1234))
 print("Connected to server!")
 
 def Decor():

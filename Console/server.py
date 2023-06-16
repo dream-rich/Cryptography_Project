@@ -10,12 +10,14 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
+context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+context.minimum_version = ssl.TLSVersion.TLSv1_3
 context.load_cert_chain(certfile="server.crt", keyfile="server.key")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('127.0.0.1', 999))
+server_socket.bind(("0.0.0.0", 1234))
 server_socket.listen(10)
 
 # Global variables
