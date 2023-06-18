@@ -133,7 +133,9 @@ def OTPGen(server_public_key):
         info=b'',
     ).derive(shared_key)
 
-    cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    
+    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
     plaintext = NAME + str(LOGTIME)

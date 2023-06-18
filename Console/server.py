@@ -136,7 +136,8 @@ def OTPGen(client : socket.socket, LOGTIME):
         info=b'',
     ).derive(shared_key)
 
-    cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
+    cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
     plaintext = str(username) + str(LOGTIME)
@@ -153,19 +154,22 @@ def signup(username, password, email):
     return
 
 def signin(username,password):
-    conn = sqlite3.connect('database.db')
-    c = conn.cursor()
-    c.execute(
-        f"SELECT PASSWORD FROM USERS WHERE USERNAME = '{username}'"
-    )
-    sv_password = c.fetchall()[0][0]
-    conn.commit()
-    conn.close()
-    if(sv_password == password):
-        return True
+    action = url + "findOne"
+    payload = json.dumps({
+    "collection": "Users",
+    "database": "Data",
+    "dataSource": "MMH",
+    "document": {
+        "name": username,
+        "password": password
+    }
+    })
+    response = requests.request("POST", action, headers=headers, data=payload)  
+    response = response['document']
+    if(response):
+        return True 
     else:
         return False
-  
 def auth(rcv, client):  
     otp_rcv = rcv.split(' ')[1]
     if(rcv.startswith("@auth")):
