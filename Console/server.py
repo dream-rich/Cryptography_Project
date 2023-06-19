@@ -4,6 +4,7 @@ import sqlite3, random, threading
 import time
 import binascii
 import ssl
+import json
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -45,19 +46,7 @@ print("Waiting for client connection...")
 def send(message : str,client : socket.socket):
    client.send(message.encode())
 
-def uploadUser(username,email,password):
-    action = url + "insertOne"
-    payload = json.dumps({
-    "collection": "Users",
-    "database": "Data",
-    "dataSource": "MMH",
-    "document": {
-        "name": username,
-        "email": email,
-        "password": password
-    }
-    })
-    requests.request("POST", action, headers=headers, data=payload)
+
 def Decor():
 
     content = """
@@ -149,9 +138,43 @@ def OTPGen(client : socket.socket, LOGTIME):
     
     return otp
 
+
+def uploadUser(username,email,password):
+    action = url + "insertOne"
+    payload = json.dumps({
+    "collection": "Users",
+    "database": "Data",
+    "dataSource": "MMH",
+    "document": {
+        "name": username,
+        "email": email,
+        "password": password
+    }
+    })
+    requests.request("POST", action, headers=headers, data=payload)
+
+
+def CheckUsername(username):
+    action = url + "find"
+    payload = {
+        "collection": "Users",
+        "database": "Data",
+        "dataSource": "MMH",
+        "filter": {"name": username},
+        "projection": {"name": 1}
+    }
+    response = requests.post(action, headers=headers, json=payload)
+    usernames = response.json().get('documents', [])
+    return any(name['name'] == username for name in usernames)
+
+
+
 def signup(username, password, email):
-    uploadUser(username=username,email=email,password=password)
-    return
+    if(CheckUsername(username) == True):
+        return False
+    else:
+        uploadUser(username=username,email=email,password=password)
+        return True
 
 def signin(username,password):
     action = url + "findOne"
@@ -159,17 +182,19 @@ def signin(username,password):
     "collection": "Users",
     "database": "Data",
     "dataSource": "MMH",
-    "document": {
+    "projection": {
         "name": username,
         "password": password
     }
     })
     response = requests.request("POST", action, headers=headers, data=payload)  
-    response = response['document']
+    response = json.loads(response.text)['document']
+    print(response)
     if(response):
         return True 
     else:
         return False
+    
 def auth(rcv, client):  
     otp_rcv = rcv.split(' ')[1]
     if(rcv.startswith("@auth")):
@@ -197,9 +222,15 @@ def handle(message : str, client : socket.socket):
         
         signup_thread = threading.Thread(target=signup,args=[username,password,email])
         signup_thread.start()
-        print("[+] " + username + " signed up!")
-        send("You have signed up, let's sign in.",client)
-        return
+
+        state = signup(username, password,email)
+        if state == True:
+            print("[+] " + username + " signed up!")
+            send("You have signed up, let's sign in.",client)
+        elif state == False:
+            send("Username already existed!",client)
+        else: 
+            print("Error")
         
     if(message.startswith("@signin")):
         try:
