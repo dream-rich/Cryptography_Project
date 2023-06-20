@@ -16,7 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import json, requests
 # Database=========================================
-uri = 'mongodb+srv://21520518:0R29AdJKqko34Ulj@otpbaseaes.zk1anvo.mongodb.net/?retryWrites=true&w=majority'
+uri = "mongodb+srv://21520518:otp1234@otp.klqr0xz.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(uri, server_api=ServerApi('1'))
 try:
     client.admin.command('ping')

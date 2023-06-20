@@ -3,7 +3,7 @@ from pymongo import MongoClient
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 
-uri = 'mongodb+srv://21520518:0R29AdJKqko34Ulj@otpbaseaes.zk1anvo.mongodb.net/?retryWrites=true&w=majority'
+uri = "mongodb+srv://21520518:otp1234@otp.klqr0xz.mongodb.net/?retryWrites=true&w=majority"
 client = MongoClient(uri, server_api=ServerApi('1'))
 db = client['Data']
 collection = db['Users']
