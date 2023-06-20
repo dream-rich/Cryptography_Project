@@ -44,7 +44,7 @@ stop_thread = False
 
 # Specify the database and collection names
 db = client['Data']
-collection = db['user']
+collection = db['Users']
 
 print("Waiting for client connection...")
 
