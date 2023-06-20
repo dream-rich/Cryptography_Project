@@ -4,6 +4,8 @@ import sqlite3, random
 import hashlib , binascii, threading
 import time
 import ssl
+import pymongo
+from pymongo import MongoClient
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
@@ -13,7 +15,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
-context.load_verify_locations("server.crt")  
+context.load_verify_locations("server.crt")
 context.verify_mode = ssl.CERT_REQUIRED
 
 # Global variables
@@ -43,7 +45,7 @@ def Menu():
     |                                                            |
     |    /signup <username> <password> <email>  : signup         |
     |    /signin <username> <password>          : signin         |
-    |    /auth   <OTP>                          : OTP            | 
+    |    /auth   <OTP>                          : OTP            |
     |                                                            |
     +------------------------------------------------------------+
     """
@@ -54,11 +56,11 @@ def LCG(cipher):
     global LOGTIME
     otp = ''
     m = 2**31
-    a = 1103515245  
-    c = 12345  
+    a = 1103515245
+    c = 12345
     seed = [0]*6
     m0 = int(LOGTIME) % len(cipher)
-    seed[0] = (a * m0 + c) % m 
+    seed[0] = (a * m0 + c) % m
     seed[1] = (a * seed[0] + c) % m
     seed[2] = (a * seed[1] + c) % m
     seed[3] = (a * seed[2] + c) % m
@@ -74,23 +76,22 @@ def LCG(cipher):
 
 def ECDH():
     global secret_key
-    
-    # Khởi tạo khóa riêng và khóa công khai của client
+
     client_private_key = ec.generate_private_key(ec.SECP256R1())
     secret_key = client_private_key
     client_public_key = client_private_key.public_key()
     public_key_der = client_public_key.public_bytes(
-    encoding=serialization.Encoding.DER,
-    format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
+            encoding=serialization.Encoding.DER,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
 
-    return public_key_der   
+    return public_key_der
 
 def generate_otp():
     global otp
     global LOGTIME
     global server_public_key
-    
+
     temp = server_public_key
 
     try:
@@ -104,37 +105,35 @@ def generate_new_otp():
     global otp
     global LOGTIME
     global server_public_key
-    
+
     temp = server_public_key
     LOGTIME = int(time.time())
 
     try:
         otp = OTPGen(temp)
         print(f"[POST]: New OTP generated: {otp}")
-    
+
     except Exception as e:
         print(e)
-            
+
 def OTPGen(server_public_key):
-    global secret_key    
+    global secret_key
     global NAME
     global LOGTIME
 
     server_public_key_bytes = bytes.fromhex(server_public_key)
     server_public_key = serialization.load_der_public_key(
-        server_public_key_bytes,
-        backend=default_backend()
-    )
+            server_public_key_bytes,
+            backend=default_backend()
+            )
     shared_key = secret_key.exchange(ec.ECDH(), server_public_key)
     shared_key = HKDF(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=None,
-        info=b'',
-    ).derive(shared_key)
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b'',
+            ).derive(shared_key)
 
-    
-    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
@@ -142,13 +141,13 @@ def OTPGen(server_public_key):
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
-    
+
     return otp
 
 def get_input(content: str):
     global NAME
     global LOGTIME
-    
+
     if content:
         if content.startswith('/menu'):
             Menu()
@@ -179,12 +178,12 @@ def get_input(content: str):
         return content.encode()
     else:
         return None
-    
-    
+
+
 def client_receive():
     global Check
     global server_public_key
-    
+
     while True:
         try:
             content = client_socket.recv(4096).decode('utf-8')
@@ -195,7 +194,7 @@ def client_receive():
                 elif(content.startswith('@pk')):
                     server_public_key = content.split(' ')[1]
                     print("Please enter OTP to authorize")
-                    threading.Thread(target=generate_otp).start()    
+                    threading.Thread(target=generate_otp).start()
                 elif(content.startswith('Client requested new OTP')):
                     threading.Thread(target=generate_new_otp).start()
                 elif(content.startswith('Authenticated')):
@@ -204,7 +203,7 @@ def client_receive():
                     print(f"[POST]: {content}")
             else:
                 pass
-        
+
         except Exception as e:
             print(e)
             client_socket.close()
@@ -219,7 +218,7 @@ def client_send():
         except Exception as e:
             print(e)
             client_socket.close()
-            break 
+            break
 
 def main():
     receive_thread = threading.Thread(target=client_receive)
@@ -236,5 +235,3 @@ if __name__=="__main__":
     Decor()
     Menu()
     main()
-
-
