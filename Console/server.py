@@ -7,6 +7,8 @@ import ssl
 import json
 import pymongo
 from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -14,14 +16,13 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import json, requests
 # Database=========================================
-client = pymongo.MongoClient('https://ap-southeast-1.aws.data.mongodb-api.com/app/data-wwzqj/endpoint/data/v1/action/')
-with open("api.key", 'r') as file:
-    apikey = file.read().strip()
-headers = {
-        'Content-Type': 'application/json',
-        'Access-Control-Request-Headers': '*',
-        'api-key': apikey,
-        }
+uri = 'mongodb+srv://21520518:0R29AdJKqko34Ulj@otpbaseaes.zk1anvo.mongodb.net/?retryWrites=true&w=majority'
+client = MongoClient(uri, server_api=ServerApi('1'))
+try:
+    client.admin.command('ping')
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
 # =========================================
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

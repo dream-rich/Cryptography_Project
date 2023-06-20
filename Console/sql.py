@@ -1,7 +1,10 @@
 import pymongo
 from pymongo import MongoClient
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
-client = MongoClient('https://ap-southeast-1.aws.data.mongodb-api.com/app/data-wwzqj/endpoint/data/v1/action/')  # Connect to MongoDB client
+uri = 'mongodb+srv://21520518:0R29AdJKqko34Ulj@otpbaseaes.zk1anvo.mongodb.net/?retryWrites=true&w=majority'
+client = MongoClient(uri, server_api=ServerApi('1'))
 db = client['Data']
 collection = db['Users']
 
