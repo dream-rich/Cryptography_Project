@@ -20,7 +20,7 @@ context.verify_mode = ssl.CERT_REQUIRED
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket = ssl.wrap_socket(client_socket, ca_certs="cert.crt")
-client_socket.connect(('40.81.29.50', 1234))
+client_socket.connect(('127.0.0.1', 1234))
 print("Connected to server!")
 
 # Global variables
@@ -45,7 +45,8 @@ def Menu():
     |                                                            |
     |    /signup <username> <password> <email>  : signup         |
     |    /signin <username> <password>          : signin         |
-    |    /auth   <OTP>                          : OTP            | 
+    |    /auth   <OTP>                          : OTP            |   
+    |    /resend                                : resend OTP     |
     |                                                            |
     +------------------------------------------------------------+
     """
@@ -92,8 +93,6 @@ def generate_otp():
     global otp
     global LOGTIME
     global server_public_key
-    
-    # temp = server_public_key
 
     try:
         otp = OTPGen(server_public_key)
@@ -107,7 +106,6 @@ def generate_new_otp():
     global LOGTIME
     global server_public_key
     
-    # temp = server_public_key
     LOGTIME = int(time.time() / 60)
 
     try:
@@ -134,15 +132,11 @@ def OTPGen(server_public_key):
         salt=None,
         info=b'',
     ).derive(shared_key)
-    print(f"Shared key: {shared_key}")
     
-    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
-    print(f"Logtime: {LOGTIME}")
-    print(f"Name: {NAME}")
-    plaintext = NAME + str(LOGTIME)
+    plaintext = NAME + str(LOGTIME) + str(shared_key)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode())
@@ -240,5 +234,3 @@ if __name__=="__main__":
     Decor()
     Menu()
     main()
-
-

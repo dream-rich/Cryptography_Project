@@ -30,7 +30,7 @@ context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket = context.wrap_socket(server_socket, server_side=True)
-server_socket.bind(('0.0.0.0', 1234))
+server_socket.bind(('127.0.0.1', 1234))
 server_socket.listen(10)
 
 
@@ -127,15 +127,11 @@ def OTPGen(client : socket.socket, LOGTIME):
         salt=None,
         info=b'',
     ).derive(shared_key)
-    print(f"Shared key: {shared_key}")
 
-    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
-    print(f"LOGTIME: {LOGTIME}")
-    print(f"Username: {username}")
-    plaintext = str(username) + str(LOGTIME)
+    plaintext = str(username) + str(LOGTIME) + str(shared_key)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode(),LOGTIME=LOGTIME)
