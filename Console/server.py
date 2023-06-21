@@ -25,7 +25,7 @@ headers = {
 # Create an SSL context with TLS 1.3 support
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
-context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
+context.load_cert_chain(certfile="new.crt")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
