@@ -21,14 +21,17 @@ headers = {
 } 
 # =========================================
 
+# Create an SSL context with TLS 1.3 support
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
-context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server_socket.bind(("0.0.0.0", 1234))
 server_socket.listen(10)
+
 
 # Global variables
 clients = []
@@ -305,4 +308,3 @@ if __name__=="__main__":
     global secret_key
     Decor()
     main()
-

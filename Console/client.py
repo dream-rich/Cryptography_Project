@@ -13,8 +13,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
-context.load_verify_locations("server.crt")  
-context.verify_mode = ssl.CERT_REQUIRED
+context.load_verify_locations("cert.crt")  
 
 # Global variables
 otp = ''
