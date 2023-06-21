@@ -40,14 +40,14 @@ def Decor():
 
     print(content)
 
-def LCG(cipher,LOGTIME): 
+def LCG(cipher,LOGTIME):
     otp = ''
     m = 2**31
-    a = 1103515245  
-    c = 12345  
+    a = 1103515245
+    c = 12345
     seed = [0]*6
     m0 = int(LOGTIME) % len(cipher)
-    seed[0] = (a * m0 + c) % m 
+    seed[0] = (a * m0 + c) % m
     seed[1] = (a * seed[0] + c) % m
     seed[2] = (a * seed[1] + c) % m
     seed[3] = (a * seed[2] + c) % m
@@ -86,8 +86,8 @@ def OTPGen(client : socket.socket):
     global secret_key
     LOGTIME = GetDictValue(logtime,client)
     username = GetDictValue(session,client)
- 
-    client_public_key_bytes = bytes.fromhex(GetDictValue(public_key,client)) 
+
+    client_public_key_bytes = bytes.fromhex(GetDictValue(public_key,client))
     client_public_key = serialization.load_der_public_key(
         client_public_key_bytes,
         backend=default_backend()
@@ -138,7 +138,24 @@ def signin(username,password):
      return True
   else:
      return False
-  
+
+def auth(rcv, client):
+    otp_rcv = rcv.split(' ')[1]
+    if(rcv.startswith("@auth")):
+        if(otp_rcv == otp):
+            timeout = float(time.time()) - int(GetDictValue(logtime, client))
+            print(f"Timeout: {timeout} seconds")
+            if(timeout) <= 30:
+                print("[+] " + GetDictValue(session,client) + " verified!")
+                send("Authenticated",client)
+            else:
+                send("OTP expired",client)
+        else:
+            send("Wrong OTP",client)
+
+    return
+
+
 def handle(message : str, client : socket.socket):
     if(message.startswith("@signup")):
         username = ""
@@ -151,46 +168,51 @@ def handle(message : str, client : socket.socket):
         signup_thread.start()
         return "[+] " + username + " signed up!"
     if(message.startswith("@signin")):
-        timestamp = int(time.time()/60)
-        logtime.append({client:timestamp})
-        # print(timestamp)
-        username = ""
-        msg = message.split(' ')
-        username = msg[1]
-        password = msg[2]
-        logged = signin(username,password)
-        if(logged):
-            session.append({client:username})
-            send("Please enter OTP to authorize",client)
-            return None
-        else:
-           send("Wrong password",client)
-           return None
-    if(message.startswith('@otp')):
-        otp_thread = threading.Thread(target=OTPGen,args=[client])
-        otp_thread.start()
-        return None
-    if(message.startswith('@ecdh')):
-        key = ECDH(client)
-        # print(key)
-        client_pk = message.split(' ')[1]
-        send("@pk " + binascii.hexlify(key).decode(),client)
-        public_key.append({client:client_pk})
-        return None
-    if(message.startswith('@auth')):
-        otp = message.split(' ')[1]
-        svotp = GetDictValue(session_otp,client)
-        timeout = (time.time() - GetDictValue(logtime,client)) % 60
-        print(timeout)
-        if(otp == str(svotp)):
-            if(timeout <= 30):
-                send("Authenticated",client)
+        try:
+            username = ""
+            msg = message.split(' ')
+            username = msg[1]
+            password = msg[2]
+            logged = signin(username,password)
+            logtime.append({client:int(time.time())})
+
+            if(logged):
+                # ECDH
+                key = ECDH(client)
+                client_pk = message.split(' ')[3]
+                send("@pk " + binascii.hexlify(key).decode(),client)
+                public_key.append({client:client_pk})
+
+                # Notify client
+                session.append({client:username})
+                print("[+] " + username + " signed in!")
+
+                # OTP verification
+                otp_thread = threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime,client)))
+                otp_thread.start()
+
+                rcv = client.recv(1024).decode()
+                auth(rcv, client)
+
             else:
-                send("OTP Timeouted",client)
-        else:
-            send("Wrong OTP",client)
-    else:
-        return message
+                send("Wrong password",client)
+                return
+
+            return
+        except Exception as e:
+            print(e)
+
+    if(message.startswith("@resend")):
+        try:
+            logtime.pop()
+            send("Client requested new OTP",client)
+            logtime.append({client:int(time.time())})
+            threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
+
+            rcv_2 = client.recv(1024).decode()
+            auth(rcv_2, client)
+        except Exception as e:
+            print(e)
 
 def handle_client(client):
     while True:
