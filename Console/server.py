@@ -29,7 +29,7 @@ context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket = context.wrap_socket(server_socket, server_side=True)
 server_socket.bind(('0.0.0.0', 1234))
 server_socket.listen(10)
 
@@ -127,15 +127,11 @@ def OTPGen(client : socket.socket, LOGTIME):
         salt=None,
         info=b'',
     ).derive(shared_key)
-    print(f"Shared key: {shared_key}")
 
-    # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
-    print(f"LOGTIME: {LOGTIME}")
-    print(f"Username: {username}")
-    plaintext = str(username) + str(LOGTIME)
+    plaintext = str(username) + str(LOGTIME) + str(shared_key)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
     otp = LCG(cipher=binascii.hexlify(ciphertext).decode(),LOGTIME=LOGTIME)
@@ -288,7 +284,7 @@ def handle(message : str, client : socket.socket):
         except Exception as e:
             print(e)        
 
-def handle_client(client):
+def handle_client(client: ssl.SSLSocket):
     while True:
         try:
             data = client.recv(4096).decode().strip()
@@ -305,10 +301,13 @@ def handle_client(client):
 
 def main():
     while True:
-        client, addr = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client,))
-        client_thread.start()
-        clients.append(client)
+        try:
+            client, addr = server_socket.accept()
+            client_thread = threading.Thread(target=handle_client, args=(client,))
+            client_thread.start()
+            clients.append(client)
+        except Exception as e:
+            print(e)
         
 if __name__=="__main__":
     global secret_key
