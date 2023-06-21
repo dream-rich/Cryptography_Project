@@ -11,17 +11,21 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+# Create an SSL context with TLS 1.3 support
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
 context.load_verify_locations("cert.crt")  
-
-# Global variables
-otp = ''
+context.verify_mode = ssl.CERT_REQUIRED
 
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect(('40.81.29.50', 1234))
 print("Connected to server!")
+
+# Global variables
+otp = ''
+
+
 
 def Decor():
 
@@ -90,10 +94,10 @@ def generate_otp():
     global LOGTIME
     global server_public_key
     
-    temp = server_public_key
+    # temp = server_public_key
 
     try:
-        otp = OTPGen(temp)
+        otp = OTPGen(server_public_key)
         print(f"[POST]: OTP generated: {otp}")
 
     except Exception as e:
@@ -104,11 +108,11 @@ def generate_new_otp():
     global LOGTIME
     global server_public_key
     
-    temp = server_public_key
-    LOGTIME = int(time.time())
+    # temp = server_public_key
+    LOGTIME = int(time.time() / 60)
 
     try:
-        otp = OTPGen(temp)
+        otp = OTPGen(server_public_key)
         print(f"[POST]: New OTP generated: {otp}")
     
     except Exception as e:
@@ -131,12 +135,14 @@ def OTPGen(server_public_key):
         salt=None,
         info=b'',
     ).derive(shared_key)
-
+    print(f"Shared key: {shared_key}")
     
     # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
+    print(f"Logtime: {LOGTIME}")
+    print(f"Name: {NAME}")
     plaintext = NAME + str(LOGTIME)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
@@ -164,7 +170,7 @@ def get_input(content: str):
                 email = additional_args[0]
                 to_send = f"@signup {username} {hashed.decode()} {email}"
             else:
-                LOGTIME = str(int(time.time()))
+                LOGTIME = str(int(time.time() / 60))
                 key = ECDH()
                 to_send = f"@signin {username} {hashed.decode()} {binascii.hexlify(key).decode()}"
 

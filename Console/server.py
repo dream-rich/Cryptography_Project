@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import json, requests
+
 # Database=========================================
 url = "https://ap-southeast-1.aws.data.mongodb-api.com/app/data-wwzqj/endpoint/data/v1/action/"
 apikey = open("api.key",'r').read()
@@ -29,7 +30,7 @@ context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_socket.bind(("0.0.0.0", 1234))
+server_socket.bind(('0.0.0.0', 1234))
 server_socket.listen(10)
 
 
@@ -40,7 +41,6 @@ public_key = []
 session_otp = []
 otp = ''
 logtime = []
-stop_thread = False
 
 print("Waiting for client connection...")
 
@@ -127,11 +127,14 @@ def OTPGen(client : socket.socket, LOGTIME):
         salt=None,
         info=b'',
     ).derive(shared_key)
+    print(f"Shared key: {shared_key}")
 
     # cipher = Cipher(algorithms.AES(shared_key), modes.CFB(initialization_vector=shared_key[:16]), backend=default_backend())
     cipher = Cipher(algorithms.AES(shared_key), modes.GCM(shared_key[:16]), backend=default_backend())
     encryptor = cipher.encryptor()
 
+    print(f"LOGTIME: {LOGTIME}")
+    print(f"Username: {username}")
     plaintext = str(username) + str(LOGTIME)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
@@ -202,11 +205,14 @@ def auth(rcv, client):
     otp_rcv = rcv.split(' ')[1]
     if(rcv.startswith("@auth")):
         if(otp_rcv == otp):
-            timeout = float(time.time()) - int(GetDictValue(logtime, client))
+            timeout = float(time.time() / 60) - int(GetDictValue(logtime, client))
             print(f"Timeout: {timeout} seconds")
             if(timeout) <= 30:
                 print("[+] " + GetDictValue(session,client) + " verified!")
                 send("Authenticated",client)
+                logtime.pop()
+                public_key.pop()
+                session.pop()
             else: 
                 send("OTP expired",client)                
         else:
@@ -242,7 +248,6 @@ def handle(message : str, client : socket.socket):
             username = msg[1]
             password = msg[2]
             logged = signin(username,password)
-            logtime.append({client:int(time.time())})
             
             if(logged):                       
                 # ECDH
@@ -256,6 +261,7 @@ def handle(message : str, client : socket.socket):
                 print("[+] " + username + " signed in!")
                 
                 # OTP verification
+                logtime.append({client:int(time.time() / 60)})
                 otp_thread = threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime,client)))
                 otp_thread.start()      
                 
@@ -274,7 +280,7 @@ def handle(message : str, client : socket.socket):
         try: 
             logtime.pop()
             send("Client requested new OTP",client)
-            logtime.append({client:int(time.time())})
+            logtime.append({client:int(time.time() / 60)})
             threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
             
             rcv_2 = client.recv(1024).decode()
