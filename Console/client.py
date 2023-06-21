@@ -19,13 +19,12 @@ context.verify_mode = ssl.CERT_REQUIRED
 
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket = context.wrap_socket(client_socket, ca_certs="cert.crt")
 client_socket.connect(('40.81.29.50', 1234))
 print("Connected to server!")
 
 # Global variables
 otp = ''
-
-
 
 def Decor():
 

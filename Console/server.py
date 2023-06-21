@@ -288,7 +288,7 @@ def handle(message : str, client : socket.socket):
         except Exception as e:
             print(e)        
 
-def handle_client(client):
+def handle_client(client: ssl.SSLSocket):
     while True:
         try:
             data = client.recv(4096).decode().strip()
@@ -306,9 +306,13 @@ def handle_client(client):
 def main():
     while True:
         client, addr = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(client,))
-        client_thread.start()
-        clients.append(client)
+        client = context.wrap_socket(client, server_side=True)
+        try:
+            client_thread = threading.Thread(target=handle_client, args=(client,))
+            client_thread.start()
+            clients.append(client)
+        except Exception as e:
+            print(e)
         
 if __name__=="__main__":
     global secret_key
