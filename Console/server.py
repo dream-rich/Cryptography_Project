@@ -305,14 +305,14 @@ def handle_client(client: ssl.SSLSocket):
 
 def main():
     while True:
-        client, addr = server_socket.accept()
-        client = context.wrap_socket(client, server_side=True)
-        try:
-            client_thread = threading.Thread(target=handle_client, args=(client,))
-            client_thread.start()
-            clients.append(client)
-        except Exception as e:
-            print(e)
+        with context.wrap_socket(server_socket, server_side=True) as ssock:
+            try:
+                client, addr = ssock.accept()
+                client_thread = threading.Thread(target=handle_client, args=(client,))
+                client_thread.start()
+                clients.append(client)
+            except Exception as e:
+                print(e)
         
 if __name__=="__main__":
     global secret_key
