@@ -29,7 +29,7 @@ context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 
 # Khởi tạo socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket = context.wrap_socket(server_socket, server_side=True)
 server_socket.bind(('0.0.0.0', 1234))
 server_socket.listen(10)
 
@@ -305,14 +305,13 @@ def handle_client(client: ssl.SSLSocket):
 
 def main():
     while True:
-        with context.wrap_socket(server_socket, server_side=True) as ssock:
-            try:
-                client, addr = ssock.accept()
-                client_thread = threading.Thread(target=handle_client, args=(client,))
-                client_thread.start()
-                clients.append(client)
-            except Exception as e:
-                print(e)
+        try:
+            client, addr = server_socket.accept()
+            client_thread = threading.Thread(target=handle_client, args=(client,))
+            client_thread.start()
+            clients.append(client)
+        except Exception as e:
+            print(e)
         
 if __name__=="__main__":
     global secret_key

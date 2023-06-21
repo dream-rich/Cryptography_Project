@@ -14,12 +14,12 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 # Create an SSL context with TLS 1.3 support
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
-context.load_verify_locations("new.crt")  
+context.load_verify_locations("cert.crt")  
 context.verify_mode = ssl.CERT_REQUIRED
 
 # Khởi tạo socket client
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket = ssl.wrap_socket(client_socket, ca_certs="new.crt")
+client_socket = ssl.wrap_socket(client_socket, ca_certs="cert.crt")
 client_socket.connect(('40.81.29.50', 1234))
 print("Connected to server!")
 
