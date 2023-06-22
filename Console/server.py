@@ -27,12 +27,11 @@ context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 context.minimum_version = ssl.TLSVersion.TLSv1_3
 context.load_cert_chain(certfile="cert.crt", keyfile="cert.key")
 
-# Khởi tạo socket server
+# Initialize server socket
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket = context.wrap_socket(server_socket, server_side=True)
 server_socket.bind(('0.0.0.0', 1234))
 server_socket.listen(10)
-
 
 # Global variables
 clients = []
@@ -44,8 +43,8 @@ logtime = []
 
 print("Waiting for client connection...")
 
-def send(message : str,client : socket.socket):
-   client.send(message.encode())
+def send(content : str,client : socket.socket):
+   client.send(content.encode())
 
 
 def Decor():
@@ -59,31 +58,38 @@ def Decor():
 
     print(content)
 
-def LCG(cipher,LOGTIME): 
+
+def LCG(cipher: str, LOGTIME): 
+    # Set parameters
     otp = ''
     m = 2**31
     a = 1103515245  
     c = 12345  
     seed = [0]*6
     m0 = int(LOGTIME) % len(cipher)
+    
+    # Xn+1=(aXn + c) mod m
     seed[0] = (a * m0 + c) % m 
     seed[1] = (a * seed[0] + c) % m
     seed[2] = (a * seed[1] + c) % m
     seed[3] = (a * seed[2] + c) % m
     seed[4] = (a * seed[3] + c) % m
     seed[5] = (a * seed[4] + c) % m
+    
     for i in seed:
         otp_char =  str(cipher[i % len(cipher)])
         if(otp_char.isdigit()):
             otp += otp_char
         else:
             otp += str(int(ord(otp_char) % 10))
+            
     return otp
+
 
 def ECDH(client_socket):
     global secret_key
 
-    # Khởi tạo khóa riêng và khóa công khai của server
+    # Initialize the server's private and public keys
     secret_key = server_private_key = ec.generate_private_key(ec.SECP256R1())
     server_public_key = server_private_key.public_key()
     server_public_key_der = server_public_key.public_bytes(
@@ -92,11 +98,15 @@ def ECDH(client_socket):
     )
     return server_public_key_der
 
-def GetDictValue(dict,client):
-    for i in dict:
+
+# Get value in dictionary
+def get_value_from_dict(arr: dict, client):
+    for i in arr:
         for key in i.keys():
             if key == client:
                 return str(i[key])
+    return None
+
 
 def generate_OTP(client : socket.socket, logtime):
     global otp
@@ -108,16 +118,18 @@ def generate_OTP(client : socket.socket, logtime):
     except Exception as e:
         print(e)
         
+        
 def OTPGen(client : socket.socket, LOGTIME):
     global secret_key
     global otp
-    username = GetDictValue(session,client)
+    username = get_value_from_dict(session, client)
  
-    client_public_key_bytes = bytes.fromhex(str(GetDictValue(public_key,client))) 
+    client_public_key_bytes = bytes.fromhex(str(get_value_from_dict(public_key, client))) 
     client_public_key = serialization.load_der_public_key(
         client_public_key_bytes,
         backend=default_backend()
     )
+    
     shared_key = secret_key.exchange(ec.ECDH(), client_public_key)
     shared_key = HKDF(
         algorithm=hashes.SHA256(),
@@ -132,14 +144,14 @@ def OTPGen(client : socket.socket, LOGTIME):
     plaintext = str(username) + str(LOGTIME) + str(shared_key)
     ciphertext = encryptor.update(plaintext.encode()) + encryptor.finalize()
 
-    otp = LCG(cipher=binascii.hexlify(ciphertext).decode(),LOGTIME=LOGTIME)
+    otp = LCG(cipher=binascii.hexlify(ciphertext).decode(), LOGTIME=LOGTIME)
 
     session_otp.append({client:otp})
     
     return otp
 
 
-def uploadUser(username,email,password):
+def upload_user(username,email,password):
     action = url + "insertOne"
     payload = json.dumps({
     "collection": "Users",
@@ -154,7 +166,7 @@ def uploadUser(username,email,password):
     requests.request("POST", action, headers=headers, data=payload)
 
 
-def CheckUsername(username):
+def check_username(username):
     action = url + "find"
     payload = {
         "collection": "Users",
@@ -168,13 +180,13 @@ def CheckUsername(username):
     return any(name['name'] == username for name in usernames)
 
 
-
 def signup(username, password, email):
-    if(CheckUsername(username) == True):
+    if(check_username(username) == True):
         return False
     else:
-        uploadUser(username=username,email=email,password=password)
+        upload_user(username=username, email=email, password=password)
         return True
+
 
 def signin(username,password):
     action = url + "findOne"
@@ -188,85 +200,69 @@ def signin(username,password):
     }
     })
     response = requests.request("POST", action, headers=headers, data=payload)  
-
-    print(response)
+    
     if(response):
         dbpw = json.loads(response.text)['document']
         if dbpw != None:
             if dbpw['password'] == password:
                 return True
-            else:
-                return False
         return False 
     else:
         return False
-    
-    #  if response:
-    #     dbpasswd = json.loads(response.text)
-    #     dbpasswd = dbpasswd['document']
-    #     if dbpasswd != None:
-    #         if dbpasswd['password'] == password:
-    #             return 1 
-    #         else:
-    #             return -1
-    #     else:
-    #         return -2
-    # else:
-    #     return 0
-    
+
+
 def auth(rcv, client, log: float):  
     otp_rcv = rcv.split(' ')[1]
+    
     if(rcv.startswith("@auth")):
         if(otp_rcv == otp):
             timeout = (float(time.time()) - log)
             print(f"Timeout: {timeout} seconds")
+            
             if(timeout) <= 30:
-                print("[+] " + GetDictValue(session,client) + " verified!")
-                send("Authenticated",client)
+                print("[+] " + get_value_from_dict(session,client) + " verified!")
+                send("Authenticated", client)
                 logtime.pop()
                 public_key.pop()
                 session.pop()
             else: 
-                send("OTP expired",client)                
+                send("OTP expired", client)                
         else:
-            send("Wrong OTP",client)
+            send("Wrong OTP", client)
             
     return
 
 
-def handle(message : str, client : socket.socket):
-    if(message.startswith("@signup")):
+def handle(content : str, client : socket.socket):
+    if(content.startswith("@signup")):
         username = ""
-        msg = message.split(' ')
+        msg = content.split(' ')
         username = msg[1]
         password = msg[2]
         email = msg[3]
-        
-        signup_thread = threading.Thread(target=signup,args=[username,password,email])
-        signup_thread.start()
 
-        state = signup(username, password,email)
+        state = signup(username, password, email)
         if state == True:
             print("[+] " + username + " signed up!")
-            send("You have signed up, let's sign in.",client)
+            send("You have signed up, let's sign in.", client)
         elif state == False:
-            send("Username already existed!",client)
+            send("Username already existed!", client)
         else: 
             print("Error")
         
-    if(message.startswith("@signin")):
+    if(content.startswith("@signin")):
         try:
             username = ""
-            msg = message.split(' ')
+            msg = content.split(' ')
             username = msg[1]
             password = msg[2]
-            logged = signin(username,password)
+            logged = signin(username, password)
             
             if(logged):                       
                 # ECDH
                 key = ECDH(client)
-                client_pk = message.split(' ')[3]
-                send("@pk " + binascii.hexlify(key).decode(),client)
+                client_pk = content.split(' ')[3]
+                send("@pk " + binascii.hexlify(key).decode(), client)
                 public_key.append({client:client_pk})
                 
                 # Notify client
@@ -276,33 +272,34 @@ def handle(message : str, client : socket.socket):
                 # OTP verification
                 log = float(time.time())
                 logtime.append({client:int(log / 60)})
-                otp_thread = threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime,client)))
+                otp_thread = threading.Thread(target=generate_OTP, args=(client, get_value_from_dict(logtime,client)))
                 otp_thread.start()      
                 
                 rcv = client.recv(1024).decode()
                 auth(rcv, client, log)
                 
             else:
-                send("Wrong password",client)     
+                send("Wrong password", client)     
                 return   
      
             return
         except Exception as e:
             print(e)
             
-    if(message.startswith("@resend")):
+    if(content.startswith("@resend")):
         try: 
             logtime.pop()
-            send("Client requested new OTP",client)
+            send("Client requested new OTP", client)
             
             log = float(time.time())
             logtime.append({client:int(log / 60)})
-            threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
+            threading.Thread(target=generate_OTP, args=(client, get_value_from_dict(logtime, client))).start()
             
             rcv_2 = client.recv(1024).decode()
             auth(rcv_2, client, log)
         except Exception as e:
             print(e)        
+
 
 def handle_client(client: ssl.SSLSocket):
     while True:
@@ -310,7 +307,7 @@ def handle_client(client: ssl.SSLSocket):
             data = client.recv(4096).decode().strip()
             if not data:
                 break
-            msg = handle(message=data, client=client)
+            msg = handle(content=data, client=client)
             if msg:
                 print(f"[POST]: {msg}")
         except Exception as e:
@@ -318,6 +315,7 @@ def handle_client(client: ssl.SSLSocket):
             clients.remove(client)
             client.close()
             break   
+
 
 def main():
     while True:

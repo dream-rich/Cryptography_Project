@@ -17,7 +17,7 @@ context.minimum_version = ssl.TLSVersion.TLSv1_3
 context.load_verify_locations("cert.crt")  
 context.verify_mode = ssl.CERT_REQUIRED
 
-# Khởi tạo socket client
+# Initialize client socket
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket = ssl.wrap_socket(client_socket, ca_certs="cert.crt")
 client_socket.connect(('40.81.29.50', 1234))
@@ -27,7 +27,6 @@ print("Connected to server!")
 otp = ''
 
 def Decor():
-
     content = """
     +------------------------------------------------------------------+
     |  One Time Password (OTP) Based on Advanced Encrypted Standard    |
@@ -36,6 +35,7 @@ def Decor():
     """
 
     print(content)
+
 
 def Menu():
     content = """
@@ -53,20 +53,26 @@ def Menu():
 
     print(content)
 
+
 def LCG(cipher):
     global LOGTIME
     otp = ''
+    
+    # Set up parameters for LCG
     m = 2**31
     a = 1103515245  
     c = 12345  
     seed = [0]*6
     m0 = int(LOGTIME) % len(cipher)
+    
+    # Generate 6 random numbers
     seed[0] = (a * m0 + c) % m 
     seed[1] = (a * seed[0] + c) % m
     seed[2] = (a * seed[1] + c) % m
     seed[3] = (a * seed[2] + c) % m
     seed[4] = (a * seed[3] + c) % m
     seed[5] = (a * seed[4] + c) % m
+    
     for i in seed:
         otp_char =  str(cipher[i % len(cipher)])
         if(otp_char.isdigit()):
@@ -75,10 +81,11 @@ def LCG(cipher):
             otp += str(int(ord(otp_char) % 10))
     return otp
 
+
 def ECDH():
     global secret_key
     
-    # Khởi tạo khóa riêng và khóa công khai của client
+    # Initialize private key and public key of client
     client_private_key = ec.generate_private_key(ec.SECP256R1())
     secret_key = client_private_key
     client_public_key = client_private_key.public_key()
@@ -89,16 +96,19 @@ def ECDH():
 
     return public_key_der   
 
+
 def generate_otp():
     global otp
+    global NAME
     global LOGTIME
     global server_public_key
-    
-    # temp = server_public_key
 
     try:
         otp = OTPGen(server_public_key)
-        print(f"[POST]: OTP generated: {otp}")
+        print(f"[POST]: OTP generated, open file {NAME} to get OTP")
+
+        with open(NAME ,  "w") as f:
+            f.write(otp)
 
     except Exception as e:
         print(e)
@@ -108,15 +118,18 @@ def generate_new_otp():
     global LOGTIME
     global server_public_key
     
-    # temp = server_public_key
     LOGTIME = int(time.time() / 60)
 
     try:
         otp = OTPGen(server_public_key)
-        print(f"[POST]: New OTP generated: {otp}")
+        print(f"[POST]: New OTP generated, open file {NAME} to get OTP")
+        
+        with open(NAME , "w") as f:
+            f.write(otp)
     
     except Exception as e:
         print(e)
+            
             
 def OTPGen(server_public_key):
     global secret_key    
@@ -146,6 +159,7 @@ def OTPGen(server_public_key):
     
     return otp
 
+
 def get_input(content: str):
     global NAME
     global LOGTIME
@@ -174,6 +188,7 @@ def get_input(content: str):
 
         if content.startswith('/resend'):
             return content.replace('/resend', '@resend').encode()
+        
         if content.startswith('/auth'):
             return content.replace('/auth', '@auth').encode()
 
@@ -193,14 +208,18 @@ def client_receive():
                 if(content.startswith('You have signed in!')):
                     Check = True
                     print(f"[POST]: {content}")
+                    
                 elif(content.startswith('@pk')):
                     server_public_key = content.split(' ')[1]
                     print("Please enter OTP to authorize")
-                    threading.Thread(target=generate_otp).start()    
+                    threading.Thread(target=generate_otp).start()  
+                      
                 elif(content.startswith('Client requested new OTP')):
                     threading.Thread(target=generate_new_otp).start()
+                    
                 elif(content.startswith('Authenticated')):
                     print(f"[POST]: {content}")
+                    
                 else:
                     print(f"[POST]: {content}")
             else:
@@ -210,6 +229,7 @@ def client_receive():
             print(e)
             client_socket.close()
             break
+
 
 def client_send():
     while True:
@@ -221,6 +241,7 @@ def client_send():
             print(e)
             client_socket.close()
             break 
+
 
 def main():    
     receive_thread = threading.Thread(target=client_receive)
