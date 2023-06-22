@@ -44,8 +44,6 @@ logtime = []
 
 print("Waiting for client connection...")
 
-# Chấp nhận kết nối từ client
-
 def send(message : str,client : socket.socket):
    client.send(message.encode())
 
@@ -197,11 +195,11 @@ def signin(username,password):
     else:
         return False
     
-def auth(rcv, client):  
+def auth(rcv, client, log: float):  
     otp_rcv = rcv.split(' ')[1]
     if(rcv.startswith("@auth")):
         if(otp_rcv == otp):
-            timeout = float(time.time() / 60) - int(GetDictValue(logtime, client))
+            timeout = (float(time.time()) - log)
             print(f"Timeout: {timeout} seconds")
             if(timeout) <= 30:
                 print("[+] " + GetDictValue(session,client) + " verified!")
@@ -257,12 +255,13 @@ def handle(message : str, client : socket.socket):
                 print("[+] " + username + " signed in!")
                 
                 # OTP verification
-                logtime.append({client:int(time.time() / 60)})
+                log = float(time.time())
+                logtime.append({client:int(log / 60)})
                 otp_thread = threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime,client)))
                 otp_thread.start()      
                 
                 rcv = client.recv(1024).decode()
-                auth(rcv, client)
+                auth(rcv, client, log)
                 
             else:
                 send("Wrong password",client)     
@@ -276,11 +275,13 @@ def handle(message : str, client : socket.socket):
         try: 
             logtime.pop()
             send("Client requested new OTP",client)
-            logtime.append({client:int(time.time() / 60)})
+            
+            log = float(time.time())
+            logtime.append({client:int(log / 60)})
             threading.Thread(target=generate_OTP,args=(client, GetDictValue(logtime, client))).start()
             
             rcv_2 = client.recv(1024).decode()
-            auth(rcv_2, client)
+            auth(rcv_2, client, log)
         except Exception as e:
             print(e)        
 
