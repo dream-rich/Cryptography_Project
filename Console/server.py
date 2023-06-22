@@ -188,12 +188,31 @@ def signin(username,password):
     }
     })
     response = requests.request("POST", action, headers=headers, data=payload)  
-    response = json.loads(response.text)['document']
+
     print(response)
     if(response):
-        return True 
+        dbpw = json.loads(response.text)['document']
+        if dbpw != None:
+            if dbpw['password'] == password:
+                return True
+            else:
+                return False
+        return False 
     else:
         return False
+    
+    #  if response:
+    #     dbpasswd = json.loads(response.text)
+    #     dbpasswd = dbpasswd['document']
+    #     if dbpasswd != None:
+    #         if dbpasswd['password'] == password:
+    #             return 1 
+    #         else:
+    #             return -1
+    #     else:
+    #         return -2
+    # else:
+    #     return 0
     
 def auth(rcv, client, log: float):  
     otp_rcv = rcv.split(' ')[1]

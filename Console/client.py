@@ -158,7 +158,7 @@ def get_input(content: str):
         if content.startswith(('/signup', '/signin')):
             command, *args = content.split(' ')
             username, password, *additional_args = args
-            salt = password[2:6]
+            salt = password[2:6] + username[0:4]
             NAME = username
             hashed = binascii.hexlify(hashlib.sha256((password + salt).encode()).digest())
 
