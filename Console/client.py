@@ -1,6 +1,4 @@
 import socket
-import struct
-import sqlite3, random
 import hashlib , binascii, threading
 import time
 import ssl
@@ -258,4 +256,3 @@ if __name__=="__main__":
     Decor()
     Menu()
     main()
-
