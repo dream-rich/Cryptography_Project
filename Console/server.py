@@ -211,7 +211,6 @@ def auth(rcv, client, log: float):
                 send("Authenticated", client)
                 logtime.pop()
                 public_key.pop()
-                session.pop()
             else:
                 send("OTP expired", client)
         else:
