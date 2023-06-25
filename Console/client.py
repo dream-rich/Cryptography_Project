@@ -1,6 +1,4 @@
 import socket
-import struct
-import sqlite3, random
 import hashlib , binascii, threading
 import time
 import ssl
@@ -112,6 +110,7 @@ def generate_otp():
 
     except Exception as e:
         print(e)
+
 
 def generate_new_otp():
     global otp

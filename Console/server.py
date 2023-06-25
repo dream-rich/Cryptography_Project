@@ -1,6 +1,5 @@
 import socket
-import struct
-import sqlite3, random, threading
+import threading
 import time
 import binascii
 import ssl
@@ -48,7 +47,6 @@ def send(content : str,client : socket.socket):
 
 
 def Decor():
-
     content = """
     +------------------------------------------------------------------+
     |  One Time Password (OTP) Based on Advanced Encrypted Standard    |
@@ -224,7 +222,6 @@ def auth(rcv, client, log: float):
                 send("Authenticated", client)
                 logtime.pop()
                 public_key.pop()
-                session.pop()
             else: 
                 send("OTP expired", client)                
         else:
@@ -258,25 +255,30 @@ def handle(content : str, client : socket.socket):
             password = msg[2]
             logged = signin(username, password)
             
-            if(logged):                       
-                # ECDH
-                key = ECDH(client)
-                client_pk = content.split(' ')[3]
-                send("@pk " + binascii.hexlify(key).decode(), client)
-                public_key.append({client:client_pk})
-                
-                # Notify client
-                session.append({client:username})
-                print("[+] " + username + " signed in!")
-                
-                # OTP verification
-                log = float(time.time())
-                logtime.append({client:int(log / 60)})
-                otp_thread = threading.Thread(target=generate_OTP, args=(client, get_value_from_dict(logtime,client)))
-                otp_thread.start()      
-                
-                rcv = client.recv(1024).decode()
-                auth(rcv, client, log)
+            if(logged):       
+                print(f"Session: {session}")
+                if get_value_from_dict(session, client) is not None or username in [item for d in session for item in d.values()]:
+                    send("Already logged in", client)
+                    return
+                else:
+                    # ECDH
+                    key = ECDH(client)
+                    client_pk = content.split(' ')[3]
+                    send("@pk " + binascii.hexlify(key).decode(), client)
+                    public_key.append({client:client_pk})
+                    
+                    # Notify client
+                    session.append({client:username})
+                    print("[+] " + username + " signed in!")
+                    
+                    # OTP verification
+                    log = float(time.time())
+                    logtime.append({client:int(log / 60)})
+                    otp_thread = threading.Thread(target=generate_OTP, args=(client, get_value_from_dict(logtime,client)))
+                    otp_thread.start()      
+                    
+                    rcv = client.recv(1024).decode()
+                    auth(rcv, client, log)
                 
             else:
                 send("Wrong password", client)     
